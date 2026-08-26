@@ -22,7 +22,9 @@ Puede:
 - gestionar configuración de plataforma;
 - gestionar memberships TIBOX;
 - revisar auditoría global;
-- entrar a contexto de cliente cuando el modelo comercial/legal lo permita.
+- administrar accesos de clientes;
+- eliminar clientes mediante el flujo controlado de offboarding;
+- entrar a contexto de cliente cuando exista una membresía explícita y el modelo comercial/legal lo permita.
 
 ### `platform_support`
 
@@ -30,8 +32,18 @@ Puede:
 
 - ver estado operativo mínimo de clientes;
 - revisar errores técnicos e integraciones;
+- administrar accesos cuando la política vigente lo permita;
 - solicitar/iniciar acceso de soporte según política;
 - no debe modificar roles de plataforma ni acceder silenciosamente a evidencias.
+
+### Identidades del piloto
+
+La migración vigente deja configurados como Super Admin:
+
+- `wdiaz@tibox.cl` → `platform_admin`
+- `pfarias@tibox.cl` → `platform_admin`
+
+Estos correos son bootstrap explícito del piloto. En una fase posterior conviene reemplazar la asignación inicial por un flujo formal de gestión de administradores de plataforma.
 
 ## Roles de organización
 
@@ -80,15 +92,17 @@ Puede:
 
 | Acción | Platform admin | Support | Org admin | Compliance | Contributor | Auditor | Viewer |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Ver dashboard cliente | Sí | Condicional | Sí | Sí | Sí | Sí | Sí |
-| Editar control | Condicional | No | Sí | Sí | Limitado | No | No |
-| Subir evidencia | Condicional | No | Sí | Sí | Sí | No | No |
-| Eliminar evidencia | Condicional | No | Sí | Condicional | Propia/condicional | No | No |
-| Crear acción | Condicional | No | Sí | Sí | Sí | Sí/observación | No |
-| Administrar usuarios cliente | Sí | No | Sí | No | No | No | No |
-| Ver auditoría cliente | Sí | Soporte autorizado | Sí | Sí/limitado | No | Sí | No |
-| Exportar datos | Sí | No | Sí | Sí | No | Sí/limitado | Limitado |
-| Configurar integración | Sí | Soporte autorizado | Sí | No | No | No | No |
+| Ver dashboard cliente | Con membership | Condicional | Sí | Sí | Sí | Sí | Sí |
+| Editar control | Con membership/rol | No | Sí | Sí | Limitado | No | No |
+| Subir evidencia | Con membership/rol | No | Sí | Sí | Sí | No | No |
+| Eliminar evidencia | Con membership/rol | No | Sí | Condicional | Propia/condicional | No | No |
+| Crear acción | Con membership/rol | No | Sí | Sí | Sí | Sí/observación | No |
+| Administrar usuarios cliente | Sí | Según política | Sí | No | No | No | No |
+| Crear organización cliente | Sí | No | No | No | No | No | No |
+| Eliminar organización cliente | Sí | No | No | No | No | No | No |
+| Ver auditoría cliente | Con membership | Soporte autorizado | Sí | Sí/limitado | No | Sí | No |
+| Exportar datos | Con membership | No | Sí | Sí | No | Sí/limitado | Limitado |
+| Configurar integración | Con membership/rol | Soporte autorizado | Sí | No | No | No | No |
 | Administrar organizaciones | Sí | No | No | No | No | No | No |
 
 `Condicional` requiere definición de producto/contrato.
@@ -112,15 +126,18 @@ Cada mutación valida:
 
 1. sesión;
 2. organización activa;
-3. membership activa;
-4. permiso requerido;
-5. pertenencia del recurso a la organización;
-6. payload;
-7. auditoría si corresponde.
+3. membership activa cuando la operación corresponde a datos del cliente;
+4. rol de plataforma cuando la operación corresponde al gobierno global;
+5. permiso requerido;
+6. pertenencia del recurso a la organización;
+7. payload;
+8. auditoría si corresponde.
 
 ### Base de datos
 
 RLS limita filas accesibles. Para operaciones especialmente sensibles, usar RPC/funciones controladas o servidor con validación explícita.
+
+La creación y eliminación de organizaciones se vuelven a validar dentro de PostgreSQL y están reservadas a `platform_admin`.
 
 ## Contexto de organización
 
@@ -129,10 +146,12 @@ El cliente puede seleccionar organización si pertenece a más de una.
 Una ruta como:
 
 ```text
-/o/prodata/controles/123
+/app/prodata/controles/123
 ```
 
 es solo contexto UX. El slug o ID de URL jamás autoriza por sí mismo.
+
+Un `platform_admin` tampoco obtiene membresía implícita de todos los clientes. Si necesita abrir el contexto funcional de un cliente, debe existir un grant/membership explícito.
 
 ## Cambios de roles
 
