@@ -142,19 +142,37 @@ drop trigger if exists trg_sync_access_grant on public.organization_access_grant
 create trigger trg_sync_access_grant before insert or update of email, role, status on public.organization_access_grants
 for each row execute function public.sync_access_grant_membership();
 
--- Extender alta de usuario: autenticarse no entrega datos por sí mismo; solo grants activos generan membresía.
+-- Autenticarse no entrega datos por sí mismo: cada cambio de identidad reconcilia membresías contra grants activos del correo actual.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profiles (id, email, full_name)
   values (new.id, new.email, coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'))
-  on conflict (id) do update set email = excluded.email, full_name = coalesce(excluded.full_name, public.profiles.full_name), updated_at = now();
+  on conflict (id) do update
+  set email = excluded.email,
+      full_name = coalesce(excluded.full_name, public.profiles.full_name),
+      updated_at = now();
 
+  -- Si el correo Auth cambia, una membresía emitida para el correo anterior no puede seguir autorizando acceso.
+  update public.organization_memberships m
+  set status = 'inactive', updated_at = now()
+  where m.user_id = new.id
+    and not exists (
+      select 1
+      from public.organization_access_grants g
+      where g.organization_id = m.organization_id
+        and g.status = 'active'
+        and lower(g.email) = lower(new.email)
+    );
+
+  -- Activar o actualizar exclusivamente membresías respaldadas por un grant vigente del correo actual.
   insert into public.organization_memberships (organization_id, user_id, role, status)
   select g.organization_id, new.id, g.role, 'active'
   from public.organization_access_grants g
   where g.status = 'active' and lower(g.email) = lower(new.email)
-  on conflict (organization_id, user_id) do update set role = excluded.role, status = 'active', updated_at = now();
+  on conflict (organization_id, user_id) do update
+  set role = excluded.role, status = 'active', updated_at = now();
+
   return new;
 end;
 $$;
@@ -176,7 +194,8 @@ begin
   if trim(confirmation_slug) <> org_record.slug then raise exception 'La confirmación no coincide con el slug'; end if;
   if reason_code not in ('contract_ended','customer_request','data_retention_expired','test_cleanup') then raise exception 'Motivo no permitido'; end if;
 
-  select coalesce(array_agg(user_id), '{}'::uuid[]) into affected from public.organization_memberships where organization_id = target_org;
+  select coalesce(array_agg(user_id), '{}'::uuid[]) into affected
+  from public.organization_memberships where organization_id = target_org;
 
   -- audit_events usa ON DELETE SET NULL; borramos explícitamente para no conservar datos del cliente.
   delete from public.audit_events where organization_id = target_org;
