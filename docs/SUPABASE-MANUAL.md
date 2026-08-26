@@ -2,15 +2,18 @@
 
 Este procedimiento se usa mientras el proyecto Supabase de **TIBOX Compliance** no está conectado a ChatGPT/MCP. La base se administra manualmente desde el Dashboard de Supabase y la fuente de verdad del esquema queda versionada en GitHub.
 
-## Archivo a ejecutar
+## Migraciones a ejecutar
 
-Copiar **todo** el contenido de:
+Ejecutar los archivos **en este orden**:
 
 ```text
 supabase/migrations/20260826120000_initial_mvp.sql
+supabase/migrations/20260826130000_import_paula_sharepoint_catalog.sql
+supabase/migrations/20260826173000_access_governance_and_client_deletion.sql
+supabase/migrations/20260826203000_superadmin_client_provisioning.sql
 ```
 
-y ejecutarlo en:
+Cada archivo se ejecuta desde:
 
 ```text
 Supabase Dashboard
@@ -21,9 +24,9 @@ Supabase Dashboard
 → Run
 ```
 
-El script está pensado para una instalación inicial y utiliza `ON CONFLICT` para que el seed principal sea tolerante a re-ejecuciones.
+No editar una migración que ya haya sido aplicada. Si el ambiente ya tiene las primeras migraciones, ejecutar solamente las nuevas pendientes.
 
-## Qué crea
+## Qué crea la instalación
 
 - `profiles`
 - `organizations`
@@ -36,24 +39,74 @@ El script está pensado para una instalación inicial y utiliza `ON CONFLICT` pa
 - `evidence`
 - `audit_events`
 - `product_decisions`
+- `platform_user_roles`
+- `organization_access_grants`
+- `platform_audit_events`
 - helpers de autorización
 - Row Level Security
 - índices
-- triggers de perfil y `updated_at`
-- datos demostrativos
-- 23 decisiones del documento `DECISIONES-PAULA.md`
+- triggers de identidad y `updated_at`
+- catálogo funcional de `cliente-demo`
+- gobierno de acceso y offboarding
+- provisioning transaccional de nuevos clientes
 
-## Bootstrap temporal del piloto
+## Espacios base
 
-Para que los usuarios que ya existen en Supabase Auth puedan entrar inmediatamente:
+La instalación mantiene:
 
-1. se crean perfiles para todos los usuarios existentes;
-2. se crea la organización interna `TIBOX`;
-3. se crea `Cliente Demo`;
-4. los usuarios Auth existentes quedan como `org_admin` en `TIBOX`;
-5. esos mismos usuarios quedan como `viewer` en `Cliente Demo`.
+1. `TIBOX`: organización interna de gobierno y decisiones;
+2. `Cliente Demo`: tenant de demostración y fuente actual de la plantilla funcional.
 
-**Esto es deliberadamente temporal.** Antes de incorporar al primer cliente real se reemplazará por un flujo explícito de invitaciones y asignación de roles.
+El catálogo importado desde el trabajo de Paula queda asociado a `cliente-demo`. El provisioning de nuevos clientes copia únicamente la estructura funcional necesaria y reinicia estados operativos.
+
+## Roles de plataforma del piloto
+
+Después de aplicar `20260826203000_superadmin_client_provisioning.sql`:
+
+```text
+wdiaz@tibox.cl   → platform_admin
+pfarias@tibox.cl → platform_admin
+```
+
+Ambos pueden entrar a:
+
+```text
+/app/tibox/administracion
+```
+
+para crear clientes, asignar accesos y realizar operaciones reservadas de plataforma.
+
+## Alta de nuevos clientes
+
+No es necesario crear filas manualmente en `organizations`.
+
+Desde **TIBOX → Administración → Nuevo cliente**, un `platform_admin` puede indicar:
+
+- nombre;
+- RUT;
+- slug opcional;
+- correo del administrador inicial;
+- rol inicial.
+
+La aplicación llama a:
+
+```text
+public.create_customer_org(...)
+```
+
+La función valida nuevamente el rol global del actor y crea, dentro de una misma transacción:
+
+- organización;
+- módulos;
+- obligaciones;
+- categorías de seguridad;
+- controles técnicos;
+- grant inicial por correo;
+- evento de auditoría.
+
+Si la plantilla está incompleta o falla cualquier paso, el alta se revierte completa.
+
+Guía funcional: [`ALTA-CLIENTES.md`](ALTA-CLIENTES.md).
 
 ## Seguridad
 
@@ -66,48 +119,50 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
 La contraseña de base de datos **no se utiliza en el frontend ni debe agregarse a Vercel/GitHub**.
 
-La `service_role` tampoco es necesaria para este MVP. Se añadirá solo cuando exista una operación administrativa que realmente la requiera y siempre como variable privada de servidor.
+`SUPABASE_SERVICE_ROLE_KEY` nunca debe exponerse al navegador. Se reserva para operaciones administrativas de servidor que la necesitan, actualmente la limpieza de usuarios Auth huérfanos después de la eliminación completa de un cliente.
 
-## Verificación rápida
+La función de alta es `SECURITY DEFINER`, pero:
 
-Después de ejecutar el SQL:
+- valida `auth.uid()`;
+- exige `platform_admin` dentro de PostgreSQL;
+- usa `search_path` vacío y nombres de esquema explícitos;
+- revoca ejecución pública;
+- concede `EXECUTE` únicamente a `authenticated`.
 
-1. abre **Table Editor**;
-2. verifica que exista `organizations`;
-3. debe contener `TIBOX` y `Cliente Demo`;
-4. verifica `organization_memberships`;
-5. cada usuario Auth que existía al ejecutar el script debe tener dos membresías;
-6. verifica `product_decisions`: deben existir 23 filas para TIBOX;
-7. abre la aplicación e inicia sesión con uno de los usuarios existentes.
+RLS continúa siendo la barrera normal de acceso a datos de cada organización.
 
-## Si agregas otro usuario después
+## Verificación después de las migraciones
 
-El trigger crea automáticamente su fila en `profiles`, pero **no le entrega membresía**. Mientras no implementemos invitaciones, asígnala manualmente desde SQL.
+1. abrir **Table Editor**;
+2. comprobar que existen `TIBOX` y `Cliente Demo` en `organizations`;
+3. comprobar que `platform_user_roles` tiene a Wladimick y Paula como `platform_admin`;
+4. comprobar que `cliente-demo` tiene módulos, obligaciones, categorías y controles;
+5. iniciar sesión con Paula;
+6. verificar que el menú **Administración** está disponible dentro de TIBOX;
+7. crear un cliente QA desde la interfaz;
+8. comprobar que el cliente recibió el catálogo con estados `pending`;
+9. comprobar que no heredó evidencias, acciones, responsables ni fechas;
+10. comprobar que existe el grant del administrador inicial;
+11. iniciar sesión con ese correo mediante magic link y validar que obtiene su organización.
 
-Ejemplo para dar acceso al espacio TIBOX:
+## Usuarios nuevos
 
-```sql
-insert into public.organization_memberships (organization_id, user_id, role)
-select o.id, u.id, 'org_admin'
-from public.organizations o
-join auth.users u on lower(u.email) = lower('CORREO_DEL_USUARIO')
-where o.slug = 'tibox'
-on conflict (organization_id, user_id)
-do update set role = excluded.role, status = 'active';
-```
+El alta de un cliente puede autorizar un correo aunque todavía no exista en Supabase Auth.
 
-No guardes correos reales dentro de migraciones versionadas si no es necesario.
+Cuando ese correo utiliza el magic link, el trigger de identidad:
+
+1. crea o actualiza `profiles`;
+2. busca `organization_access_grants` activos para el correo;
+3. crea o reactiva las `organization_memberships` correspondientes.
+
+Autenticarse sin un grant activo no entrega acceso a datos de clientes.
 
 ## Cambios posteriores
 
-No editar una migración que ya haya sido aplicada en producción. Para futuras modificaciones se crea un archivo nuevo en:
+Toda evolución de esquema se agrega como una nueva migración dentro de:
 
 ```text
 supabase/migrations/
 ```
 
-con timestamp posterior, por ejemplo:
-
-```text
-20260827100000_add_invitations.sql
-```
+Nunca modificar migraciones ya ejecutadas en producción.
