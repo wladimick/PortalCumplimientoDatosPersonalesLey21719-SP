@@ -19,6 +19,7 @@ Orden recomendado de lectura:
 15. [`DECISIONES-PAULA.md`](DECISIONES-PAULA.md) — decisiones de negocio pendientes.
 16. [`SUPABASE-MANUAL.md`](SUPABASE-MANUAL.md) — instalación manual del esquema, RLS y seed del piloto.
 17. [`VERCEL-MANUAL.md`](VERCEL-MANUAL.md) — variables de entorno, redeploy y validación del piloto.
+18. [`IMPORT-PAULA-SHAREPOINT.md`](IMPORT-PAULA-SHAREPOINT.md) — recuperación del catálogo, matriz y assessment construidos previamente en SharePoint.
 
 ## Implementación actual
 
@@ -26,6 +27,12 @@ La aplicación ejecutable vive en `app/`, `components/` y `lib/`. El esquema ver
 
 ```text
 supabase/migrations/20260826120000_initial_mvp.sql
+```
+
+El catálogo funcional recuperado desde el trabajo previo de Paula se carga después mediante:
+
+```text
+supabase/migrations/20260826130000_import_paula_sharepoint_catalog.sql
 ```
 
 Mientras el nuevo proyecto Supabase no esté conectado a las herramientas de desarrollo, cualquier cambio de base debe entregarse como una nueva migración SQL para ejecución manual.
