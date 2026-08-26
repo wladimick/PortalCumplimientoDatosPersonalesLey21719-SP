@@ -53,7 +53,7 @@ begin
   if normalized_slug is null
      or length(normalized_slug) < 2
      or length(normalized_slug) > 80
-     or normalized_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' then
+     or normalized_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then
     raise exception 'El slug solo puede contener minúsculas, números y guiones simples';
   end if;
 
@@ -67,7 +67,7 @@ begin
     raise exception 'El correo del administrador inicial no es válido';
   end if;
 
-  if initial_admin_role not in ('org_admin','compliance_manager','contributor','auditor','viewer') then
+  if initial_admin_role is null or initial_admin_role not in ('org_admin','compliance_manager','contributor','auditor','viewer') then
     raise exception 'El rol inicial no es válido';
   end if;
 
@@ -179,6 +179,10 @@ begin
    and target_category.slug = source_category.slug
   where source_control.organization_id = template_org_id;
   get diagnostics control_count = row_count;
+
+  if module_count = 0 or obligation_count = 0 or category_count = 0 or control_count = 0 then
+    raise exception 'La plantilla cliente-demo está incompleta; no se creó el cliente';
+  end if;
 
   insert into public.organization_access_grants (
     organization_id, email, role, status, created_by
