@@ -7,11 +7,51 @@ import { getOrganizationContext, getPlatformRole } from "@/lib/portal";
 
 const allowedGrantRoles = ["org_admin", "compliance_manager", "contributor", "auditor", "viewer"];
 
-async function requireInternalAdmin(orgSlug: string, destructive = false) {
+async function requireInternalAdmin(orgSlug: string, platformAdminOnly = false) {
   const [{ user, organization }, platformRole] = await Promise.all([getOrganizationContext(orgSlug), getPlatformRole()]);
   if (!organization.is_internal || !platformRole) throw new Error("Esta operación está reservada para TIBOX.");
-  if (destructive && platformRole !== "platform_admin") throw new Error("Solo un Administrador TIBOX puede eliminar clientes.");
+  if (platformAdminOnly && platformRole !== "platform_admin") throw new Error("Solo un Administrador TIBOX puede realizar esta operación.");
   return { user, platformRole };
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+export async function createCustomerOrganization(orgSlug: string, formData: FormData) {
+  await requireInternalAdmin(orgSlug, true);
+  const supabase = await createClient();
+  const name = String(formData.get("name") || "").trim();
+  const rut = String(formData.get("rut") || "").trim();
+  const requestedSlug = String(formData.get("slug") || "").trim();
+  const slug = slugify(requestedSlug || name);
+  const initialAdminEmail = String(formData.get("initial_admin_email") || "").trim().toLowerCase();
+  const initialAdminRole = String(formData.get("initial_admin_role") || "org_admin");
+
+  if (name.length < 2 || name.length > 120) throw new Error("El nombre del cliente debe tener entre 2 y 120 caracteres.");
+  if (slug.length < 2) throw new Error("No se pudo generar un slug válido para el cliente.");
+  if (!initialAdminEmail || !initialAdminEmail.includes("@")) throw new Error("Ingresa un correo válido para el administrador inicial.");
+  if (!allowedGrantRoles.includes(initialAdminRole)) throw new Error("El rol inicial no es válido.");
+
+  const { error } = await supabase.rpc("create_customer_org", {
+    customer_name: name,
+    customer_slug: slug,
+    customer_rut: rut || null,
+    initial_admin_email: initialAdminEmail,
+    initial_admin_role: initialAdminRole,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/app/${orgSlug}/administracion`);
+  revalidatePath("/app");
+  revalidatePath(`/app/${slug}/dashboard`);
 }
 
 export async function grantOrganizationAccess(orgSlug: string, formData: FormData) {
