@@ -1,67 +1,33 @@
+import { Plus } from "lucide-react";
+import { DataTable, type DataColumn } from "@/components/portal/data-table";
 import { getComplianceData } from "@/lib/data/portal-data";
 import { getOrganizationContext } from "@/lib/portal";
-import { StatusBadge } from "@/components/portal/status-badge";
+import { createObligation } from "./actions";
+
+const columns: DataColumn[] = [
+  { key: "code", label: "Código" },
+  { key: "title", label: "Obligación", kind: "multiline", secondaryKey: "description" },
+  { key: "module_name", label: "Módulo" },
+  { key: "legal_reference", label: "Referencia" },
+  { key: "priority", label: "Prioridad", kind: "badge" },
+  { key: "status", label: "Estado", kind: "badge" },
+  { key: "due_date", label: "Fecha objetivo", kind: "date" },
+  { key: "review_date", label: "Revisión", kind: "date", defaultVisible: false },
+];
 
 export default async function CompliancePage({ params }: { params: Promise<{ orgSlug: string }> }) {
   const { orgSlug } = await params;
-  const { organization } = await getOrganizationContext(orgSlug);
+  const { organization, membership } = await getOrganizationContext(orgSlug);
   const { modules, obligations } = await getComplianceData(organization.id);
+  const moduleMap = new Map(modules.map((module: any) => [module.id, module.name]));
+  const rows = obligations.map((item: any) => ({ ...item, module_name: moduleMap.get(item.module_id) || "Sin módulo" }));
+  const canEdit = ["org_admin", "compliance_manager", "contributor"].includes(membership.role);
+  const action = createObligation.bind(null, orgSlug);
 
   return (
     <div className="content">
-      <div className="page-head">
-        <div>
-          <span className="eyebrow">Ley N° 21.719</span>
-          <h1>Matriz de cumplimiento</h1>
-          <p>Obligaciones organizadas por módulo, estado, prioridad y fecha objetivo. El contenido del piloto es demostrativo hasta validar el catálogo legal definitivo.</p>
-        </div>
-      </div>
-
-      {modules.map((module: any) => {
-        const items = obligations.filter((item: any) => item.module_id === module.id);
-        return (
-          <section className="card section-gap" key={module.id}>
-            <div className="card-head">
-              <div>
-                <span className="eyebrow">{module.legal_reference || "Ley 21.719"}</span>
-                <h2 style={{ marginTop: 8 }}>{module.name}</h2>
-              </div>
-              <span className="badge badge-neutral">{items.length} obligaciones</span>
-            </div>
-            <div className="card-body">
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Obligación</th>
-                      <th>Referencia</th>
-                      <th>Prioridad</th>
-                      <th>Estado</th>
-                      <th>Fecha objetivo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item: any) => (
-                      <tr key={item.id}>
-                        <td><span className="code-inline">{item.code}</span></td>
-                        <td>
-                          <div className="table-title">{item.title}</div>
-                          {item.description ? <div className="table-sub">{item.description}</div> : null}
-                        </td>
-                        <td className="small muted">{item.legal_reference || "—"}</td>
-                        <td><StatusBadge value={item.priority} /></td>
-                        <td><StatusBadge value={item.status} /></td>
-                        <td className="small muted">{item.due_date ? new Intl.DateTimeFormat("es-CL").format(new Date(`${item.due_date}T12:00:00`)) : "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        );
-      })}
+      <div className="page-head"><div><span className="eyebrow">Ley N° 21.719</span><h1>Matriz de cumplimiento</h1><p>Obligaciones, evidencia requerida, prioridad y fechas de seguimiento en una vista operativa configurable.</p></div>{canEdit ? <details className="create-menu"><summary className="btn btn-primary"><Plus size={17} /> Nueva obligación</summary><div className="create-popover"><form action={action} className="compact-form"><h2>Nueva obligación</h2><div className="form-grid"><div className="field"><label>Código</label><input className="input" name="code" required /></div><div className="field"><label>Módulo</label><select className="select" name="module_id" required>{modules.map((module: any) => <option key={module.id} value={module.id}>{module.name}</option>)}</select></div></div><div className="field"><label>Obligación</label><input className="input" name="title" required /></div><div className="field"><label>Descripción</label><textarea className="textarea" name="description" /></div><div className="form-grid"><div className="field"><label>Referencia legal</label><input className="input" name="legal_reference" /></div><div className="field"><label>Prioridad</label><select className="select" name="priority" defaultValue="medium"><option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option><option value="critical">Crítica</option></select></div><div className="field"><label>Fecha objetivo</label><input className="input" name="due_date" type="date" /></div></div><button className="btn btn-primary" type="submit">Crear obligación</button></form></div></details> : null}</div>
+      <section className="card"><div className="card-head"><div><h2>Obligaciones</h2><p>{rows.length} registros · configura columnas según tu trabajo.</p></div></div><div className="card-body"><DataTable id={`obligaciones-${organization.id}`} columns={columns} rows={rows} filterKey="status" filterLabel="Estado" searchPlaceholder="Filtrar obligaciones…" /></div></section>
     </div>
   );
 }
