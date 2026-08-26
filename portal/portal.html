@@ -1,0 +1,1065 @@
+<!--
+  Portal de Cumplimiento de Protección de Datos Personales — Ley N° 21.719
+  MVP clásico para Script Editor Web Part en SharePoint Online.
+  Repositorio: wladimick/PortalCumplimientoDatosPersonalesLey21719-SP
+-->
+
+<div id="pc21719-root">
+  <div class="pc21719-boot">
+    <div class="pc21719-spinner"></div>
+    <strong>Cargando Portal de Cumplimiento…</strong>
+    <span>Conectando con las listas del sitio.</span>
+  </div>
+</div>
+
+<style>
+  :root {
+    --pc-navy: #0b2239;
+    --pc-navy-2: #123b5d;
+    --pc-blue: #155b8f;
+    --pc-blue-soft: #eaf3fa;
+    --pc-bg: #f5f7f9;
+    --pc-card: #ffffff;
+    --pc-line: #dce3e8;
+    --pc-text: #17202a;
+    --pc-muted: #5d7184;
+    --pc-success: #166534;
+    --pc-success-bg: #dcfce7;
+    --pc-warning: #8a5a00;
+    --pc-warning-bg: #fff2c7;
+    --pc-danger: #991b1b;
+    --pc-danger-bg: #fee2e2;
+    --pc-info: #075985;
+    --pc-info-bg: #e0f2fe;
+    --pc-radius: 12px;
+    --pc-shadow: 0 1px 2px rgba(11,34,57,.04), 0 8px 24px rgba(11,34,57,.05);
+  }
+
+  #pc21719-root,
+  #pc21719-root * { box-sizing: border-box; }
+
+  #pc21719-root {
+    width: 100%;
+    min-height: 680px;
+    background: var(--pc-bg);
+    color: var(--pc-text);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  #pc21719-root button,
+  #pc21719-root input,
+  #pc21719-root select { font: inherit; }
+
+  #pc21719-root a { color: inherit; }
+
+  .pc21719-boot {
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--pc-muted);
+  }
+
+  .pc21719-spinner {
+    width: 34px;
+    height: 34px;
+    border: 3px solid #d7e0e7;
+    border-top-color: var(--pc-blue);
+    border-radius: 50%;
+    animation: pc21719-spin .8s linear infinite;
+    margin-bottom: 6px;
+  }
+
+  @keyframes pc21719-spin { to { transform: rotate(360deg); } }
+
+  .pc21719-app { min-height: 680px; }
+
+  .pc21719-topbar {
+    height: 52px;
+    padding: 0 16px;
+    background: var(--pc-navy);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .pc21719-topbar-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .pc21719-logo {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: rgba(255,255,255,.13);
+    font-size: 11px;
+    letter-spacing: .4px;
+  }
+
+  .pc21719-topbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: rgba(255,255,255,.8);
+    overflow: hidden;
+  }
+
+  .pc21719-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    flex: none;
+  }
+
+  .pc21719-heading {
+    background: #fff;
+    padding: 18px 20px 16px;
+    border-bottom: 1px solid var(--pc-line);
+  }
+
+  .pc21719-heading h1 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.2;
+    color: var(--pc-navy);
+    font-weight: 700;
+  }
+
+  .pc21719-heading p {
+    margin: 5px 0 0;
+    color: var(--pc-muted);
+    font-size: 13px;
+  }
+
+  .pc21719-shell {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    min-height: 600px;
+  }
+
+  .pc21719-sidebar {
+    background: #fff;
+    border-right: 1px solid var(--pc-line);
+    padding: 16px 10px;
+  }
+
+  .pc21719-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: sticky;
+    top: 10px;
+  }
+
+  .pc21719-nav button {
+    width: 100%;
+    border: 0;
+    border-left: 3px solid transparent;
+    background: transparent;
+    color: var(--pc-text);
+    text-align: left;
+    padding: 10px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+
+  .pc21719-nav button:hover { background: #f2f6f9; }
+
+  .pc21719-nav button.is-active {
+    background: var(--pc-blue-soft);
+    color: #075b9a;
+    border-left-color: #1681c4;
+    font-weight: 600;
+  }
+
+  .pc21719-main {
+    min-width: 0;
+    padding: 22px 24px 32px;
+  }
+
+  .pc21719-hero {
+    padding: 24px;
+    border-radius: var(--pc-radius);
+    color: #fff;
+    background: linear-gradient(110deg, var(--pc-navy) 0%, #123d60 55%, #1b5f91 100%);
+    box-shadow: var(--pc-shadow);
+  }
+
+  .pc21719-hero h2 {
+    margin: 0 0 6px;
+    font-size: 23px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  .pc21719-hero p {
+    margin: 0;
+    max-width: 900px;
+    color: rgba(255,255,255,.9);
+  }
+
+  .pc21719-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 24px 0 12px;
+  }
+
+  .pc21719-section-title h3 {
+    margin: 0;
+    color: var(--pc-navy);
+    font-size: 17px;
+  }
+
+  .pc21719-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pc21719-btn {
+    border: 1px solid var(--pc-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--pc-navy);
+    padding: 7px 11px;
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .pc21719-btn:hover { border-color: #b9c7d1; background: #f9fbfc; }
+  .pc21719-btn-primary { background: var(--pc-blue); border-color: var(--pc-blue); color: #fff; }
+  .pc21719-btn-primary:hover { background: #0f4f7e; border-color: #0f4f7e; }
+
+  .pc21719-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .pc21719-kpi {
+    background: #fff;
+    border: 1px solid var(--pc-line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--pc-shadow);
+  }
+
+  .pc21719-kpi span {
+    display: block;
+    color: var(--pc-muted);
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  .pc21719-kpi strong {
+    font-size: 24px;
+    color: var(--pc-navy);
+    line-height: 1;
+  }
+
+  .pc21719-modules {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .pc21719-module-card {
+    border: 1px solid var(--pc-line);
+    border-radius: 10px;
+    background: #fff;
+    padding: 16px;
+    min-height: 132px;
+    cursor: pointer;
+    box-shadow: var(--pc-shadow);
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+
+  .pc21719-module-card:hover {
+    transform: translateY(-1px);
+    border-color: #b8c8d4;
+    box-shadow: 0 10px 25px rgba(11,34,57,.08);
+  }
+
+  .pc21719-module-card h4 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: var(--pc-navy);
+  }
+
+  .pc21719-module-card p {
+    margin: 0 0 12px;
+    color: var(--pc-muted);
+    font-size: 12.5px;
+    min-height: 36px;
+  }
+
+  .pc21719-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .pc21719-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #eef4f7;
+    color: #245678;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .pc21719-count { color: var(--pc-muted); font-size: 11px; }
+
+  .pc21719-panel {
+    background: #fff;
+    border: 1px solid var(--pc-line);
+    border-radius: var(--pc-radius);
+    box-shadow: var(--pc-shadow);
+    overflow: hidden;
+  }
+
+  .pc21719-panel-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--pc-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .pc21719-panel-head h3 { margin: 0; font-size: 16px; color: var(--pc-navy); }
+
+  .pc21719-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0 0 12px;
+  }
+
+  .pc21719-input,
+  .pc21719-select {
+    min-height: 36px;
+    border: 1px solid var(--pc-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--pc-text);
+    padding: 6px 10px;
+    outline: none;
+  }
+
+  .pc21719-input { min-width: 240px; flex: 1; }
+  .pc21719-input:focus,
+  .pc21719-select:focus { border-color: #7bb1d6; box-shadow: 0 0 0 2px rgba(21,91,143,.08); }
+
+  .pc21719-table-wrap { overflow-x: auto; }
+
+  .pc21719-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 820px;
+  }
+
+  .pc21719-table th {
+    background: #f9fbfc;
+    color: #506476;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--pc-line);
+  }
+
+  .pc21719-table td {
+    vertical-align: top;
+    padding: 12px;
+    border-bottom: 1px solid #edf1f4;
+  }
+
+  .pc21719-table tr:last-child td { border-bottom: 0; }
+  .pc21719-table tbody tr:hover { background: #fbfdfe; }
+
+  .pc21719-item-title { color: var(--pc-navy); font-weight: 600; }
+  .pc21719-small { color: var(--pc-muted); font-size: 12px; }
+
+  .pc21719-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: #eef2f5;
+    color: #425b6f;
+  }
+
+  .pc21719-badge.is-success { background: var(--pc-success-bg); color: var(--pc-success); }
+  .pc21719-badge.is-warning { background: var(--pc-warning-bg); color: var(--pc-warning); }
+  .pc21719-badge.is-danger { background: var(--pc-danger-bg); color: var(--pc-danger); }
+  .pc21719-badge.is-info { background: var(--pc-info-bg); color: var(--pc-info); }
+
+  .pc21719-category {
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  .pc21719-category-title {
+    padding: 12px 14px;
+    background: #f7fafc;
+    border-bottom: 1px solid var(--pc-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-weight: 700;
+    color: var(--pc-navy);
+  }
+
+  .pc21719-alert {
+    border: 1px solid #f0d29a;
+    background: #fffaf0;
+    border-radius: 9px;
+    padding: 12px 14px;
+    color: #6e4d12;
+    margin: 0 0 14px;
+  }
+
+  .pc21719-alert strong { display: block; margin-bottom: 3px; color: #59400e; }
+
+  .pc21719-empty {
+    padding: 26px;
+    text-align: center;
+    color: var(--pc-muted);
+  }
+
+  .pc21719-error {
+    padding: 24px;
+    background: #fff;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    color: #7f1d1d;
+  }
+
+  .pc21719-code {
+    background: #f4f6f8;
+    border: 1px solid var(--pc-line);
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 1080px) {
+    .pc21719-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .pc21719-modules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 760px) {
+    .pc21719-topbar-meta { display: none; }
+    .pc21719-heading h1 { font-size: 21px; }
+    .pc21719-shell { display: block; }
+    .pc21719-sidebar { border-right: 0; border-bottom: 1px solid var(--pc-line); overflow-x: auto; padding: 8px; }
+    .pc21719-nav { flex-direction: row; width: max-content; position: static; }
+    .pc21719-nav button { width: auto; min-width: max-content; border-left: 0; border-bottom: 3px solid transparent; }
+    .pc21719-nav button.is-active { border-left-color: transparent; border-bottom-color: #1681c4; }
+    .pc21719-main { padding: 16px 12px 24px; }
+    .pc21719-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pc21719-modules { grid-template-columns: 1fr; }
+    .pc21719-input { min-width: 100%; }
+  }
+</style>
+
+<script>
+(function () {
+  "use strict";
+
+  var CONFIG = {
+    version: "0.1.0",
+    fullBleedClassicPage: true,
+    lists: {
+      modules: ["Módulos del Portal", "Modulos del Portal"],
+      matrix: ["Matriz de Cumplimiento"],
+      assessment: ["Assessment de Seguridad", "Assessment Seguridad"],
+      categories: ["Categorías de Seguridad", "Categorias de Seguridad"],
+      executive: ["Resumen Ejecutivo"]
+    },
+    fields: {
+      title: ["Título", "Titulo", "Title", "Nombre", "Obligación", "Obligacion", "Control de seguridad", "Control"],
+      description: ["Descripción", "Descripcion", "Descripción del control", "Descripcion del control", "Detalle"],
+      module: ["ModuloPortal", "Módulo Portal", "Modulo Portal", "Módulo", "Modulo", "Área", "Area"],
+      status: ["Estado", "Status"],
+      responsible: ["Responsable", "Responsible", "Asignado a"],
+      date: ["Fecha de Revisión", "Fecha de Revision", "Fecha", "Fecha límite", "Fecha limite", "Vencimiento"],
+      observations: ["Observaciones", "Comentarios", "Notas"],
+      recommendation: ["Recomendación", "Recomendacion"],
+      category: ["Categoría", "Categoria"],
+      level: ["Nivel", "Criticidad", "Prioridad"],
+      article: ["Artículo", "Articulo", "Referencia legal", "Referencia", "Ley"],
+      order: ["Orden", "Order"]
+    }
+  };
+
+  var DEFAULT_MODULES = [
+    { id: "default-1", title: "Información y transparencia", description: "Inventario, finalidades, bases legales, destinatarios, conservación y política de tratamiento.", article: "Arts. 14 y 14 ter" },
+    { id: "default-2", title: "Derechos de titulares", description: "Procedimiento y evidencias para gestionar solicitudes de acceso, rectificación, supresión, oposición y portabilidad.", article: "Arts. 4 a 11" },
+    { id: "default-3", title: "Seguridad y confidencialidad", description: "Controles técnicos y organizativos para proteger los datos personales.", article: "Arts. 14 bis y 14 quinquies" },
+    { id: "default-4", title: "Incidentes y vulneraciones", description: "Registro, procedimiento y evidencias de gestión de incidentes.", article: "Art. 14 sexies" },
+    { id: "default-5", title: "Privacidad desde el diseño", description: "Controles de privacidad para nuevos proyectos, procesos o tratamientos.", article: "Art. 14 quáter" },
+    { id: "default-6", title: "Terceros y encargados", description: "Contratos, anexos y registro de proveedores que tratan datos personales.", article: "Art. 15 bis" },
+    { id: "default-7", title: "Evaluaciones de impacto", description: "Evaluaciones de alto riesgo y medidas de mitigación.", article: "Art. 15 ter" },
+    { id: "default-8", title: "Prevención y cumplimiento", description: "Acciones preventivas y documentación del programa de cumplimiento.", article: "Arts. 48 y 49" },
+    { id: "default-9", title: "Seguridad de infraestructura y aplicaciones", description: "Checklist técnico para servidores, PCs, correo, Microsoft 365, SaaS y aplicaciones críticas.", article: "Assessment técnico", assessment: true }
+  ];
+
+  var root = document.getElementById("pc21719-root");
+  var state = {
+    webUrl: "",
+    webTitle: "SharePoint",
+    userTitle: "",
+    activeModule: "home",
+    allLists: [],
+    bundles: {},
+    modules: [],
+    missing: [],
+    search: "",
+    statusFilter: ""
+  };
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function normalize(value) {
+    return String(value == null ? "" : value)
+      .normalize ? String(value == null ? "" : value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+      : String(value == null ? "" : value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  function webUrl() {
+    if (window._spPageContextInfo && _spPageContextInfo.webAbsoluteUrl) {
+      return _spPageContextInfo.webAbsoluteUrl.replace(/\/$/, "");
+    }
+    var path = location.pathname;
+    var marker = path.toLowerCase().indexOf("/sitepages/");
+    if (marker < 0) marker = path.toLowerCase().indexOf("/pages/");
+    if (marker >= 0) path = path.substring(0, marker);
+    return (location.origin + path).replace(/\/$/, "");
+  }
+
+  function api(path, options) {
+    var opts = options || {};
+    opts.credentials = "same-origin";
+    opts.headers = opts.headers || {};
+    opts.headers.Accept = "application/json;odata=nometadata";
+    return fetch(state.webUrl + path, opts).then(function (response) {
+      if (!response.ok) {
+        return response.text().then(function (body) {
+          throw new Error("SharePoint REST " + response.status + ": " + body.substring(0, 400));
+        });
+      }
+      if (response.status === 204) return null;
+      return response.json();
+    });
+  }
+
+  function listEndpoint(id, suffix) {
+    return "/_api/web/lists(guid'" + id + "')" + suffix;
+  }
+
+  function findList(aliases) {
+    var normalizedAliases = aliases.map(normalize);
+    for (var i = 0; i < state.allLists.length; i++) {
+      if (normalizedAliases.indexOf(normalize(state.allLists[i].Title)) >= 0) return state.allLists[i];
+    }
+    return null;
+  }
+
+  function fieldMap(fields) {
+    var map = {};
+    (fields || []).forEach(function (field) {
+      map[normalize(field.Title)] = field.InternalName;
+      map[normalize(field.InternalName)] = field.InternalName;
+    });
+    return map;
+  }
+
+  function resolveInternal(bundle, aliases) {
+    if (!bundle) return null;
+    for (var i = 0; i < aliases.length; i++) {
+      var found = bundle.fieldMap[normalize(aliases[i])];
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function textValue(item, bundle, aliases) {
+    if (!item || !bundle) return "";
+    var internal = resolveInternal(bundle, aliases);
+    if (!internal) return "";
+    if (item.FieldValuesAsText && item.FieldValuesAsText[internal] != null) {
+      return String(item.FieldValuesAsText[internal]);
+    }
+    var raw = item[internal];
+    if (raw == null) return "";
+    if (typeof raw === "object" && raw.results) return raw.results.join(", ");
+    if (typeof raw === "object") return "";
+    return String(raw);
+  }
+
+  function firstUseful(item, bundle, groups) {
+    for (var i = 0; i < groups.length; i++) {
+      var value = textValue(item, bundle, groups[i]);
+      if (value) return value;
+    }
+    return "";
+  }
+
+  function statusClass(value) {
+    var n = normalize(value);
+    if (!n) return "";
+    if (n.indexOf("cumpl") >= 0 || n.indexOf("complet") >= 0 || n.indexOf("implement") >= 0 || n.indexOf("cerrad") >= 0) return "is-success";
+    if (n.indexOf("proceso") >= 0 || n.indexOf("curso") >= 0 || n.indexOf("parcial") >= 0 || n.indexOf("revision") >= 0) return "is-info";
+    if (n.indexOf("pend") >= 0 || n.indexOf("abiert") >= 0) return "is-warning";
+    if (n.indexOf("no cumpl") >= 0 || n.indexOf("crit") >= 0 || n.indexOf("alto") >= 0 || n.indexOf("venc") >= 0) return "is-danger";
+    return "";
+  }
+
+  function badge(value) {
+    if (!value) return '<span class="pc21719-small">—</span>';
+    return '<span class="pc21719-badge ' + statusClass(value) + '">' + escapeHtml(value) + "</span>";
+  }
+
+  function displayDate(value) {
+    if (!value) return "—";
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    try { return d.toLocaleDateString("es-CL"); } catch (e) { return value; }
+  }
+
+  function attachmentHtml(item) {
+    var files = item && item.AttachmentFiles && item.AttachmentFiles.results ? item.AttachmentFiles.results : (Array.isArray(item && item.AttachmentFiles) ? item.AttachmentFiles : []);
+    if (!files || !files.length) return '<span class="pc21719-small">Sin adjuntos</span>';
+    return files.slice(0, 3).map(function (file) {
+      var url = file.ServerRelativeUrl || "#";
+      var name = file.FileName || "Evidencia";
+      return '<div><a class="pc21719-small" href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(name) + "</a></div>";
+    }).join("") + (files.length > 3 ? '<div class="pc21719-small">+' + (files.length - 3) + " más</div>" : "");
+  }
+
+  function nativeFormUrl(bundle, itemId, mode) {
+    if (!bundle || !bundle.list) return "#";
+    var rootFolder = bundle.list.RootFolder && bundle.list.RootFolder.ServerRelativeUrl ? bundle.list.RootFolder.ServerRelativeUrl : "";
+    if (!rootFolder) return state.webUrl + "/_layouts/15/listform.aspx?PageType=4&ListId=" + encodeURIComponent("{" + bundle.list.Id + "}") + "&ID=" + itemId;
+    var form = mode === "edit" ? "EditForm.aspx" : "DispForm.aspx";
+    return rootFolder + "/" + form + "?ID=" + encodeURIComponent(itemId);
+  }
+
+  function applyClassicFullBleed() {
+    if (!CONFIG.fullBleedClassicPage) return;
+    var style = document.createElement("style");
+    style.setAttribute("data-pc21719", "classic-layout");
+    style.textContent = "#sideNavBox{display:none!important}#contentBox{margin-left:0!important;min-width:0!important}#s4-titlerow{display:none!important}.ms-core-overlay{background:#f5f7f9!important}";
+    document.head.appendChild(style);
+  }
+
+  function loadBundle(logicalName) {
+    var list = findList(CONFIG.lists[logicalName]);
+    if (!list) {
+      state.missing.push(CONFIG.lists[logicalName][0]);
+      return Promise.resolve(null);
+    }
+
+    var fieldsPromise = api(listEndpoint(list.Id, "/fields?$select=Title,InternalName,TypeAsString,Hidden,ReadOnlyField&$top=500"));
+    var itemsPromise = api(listEndpoint(list.Id, "/items?$select=*,AttachmentFiles,FieldValuesAsText&$expand=AttachmentFiles,FieldValuesAsText&$top=5000"))
+      .catch(function () {
+        return api(listEndpoint(list.Id, "/items?$top=5000"));
+      });
+
+    return Promise.all([fieldsPromise, itemsPromise]).then(function (parts) {
+      var fields = parts[0].value || parts[0].results || [];
+      var items = parts[1].value || parts[1].results || [];
+      var bundle = { list: list, fields: fields, fieldMap: fieldMap(fields), items: items };
+      state.bundles[logicalName] = bundle;
+      return bundle;
+    });
+  }
+
+  function moduleTitleFromItem(item, bundle) {
+    return firstUseful(item, bundle, [CONFIG.fields.title, ["Módulo", "Modulo", "Nombre", "Title"]]);
+  }
+
+  function buildModules() {
+    var bundle = state.bundles.modules;
+    if (!bundle || !bundle.items.length) {
+      state.modules = DEFAULT_MODULES.slice();
+      return;
+    }
+
+    var titleInternal = resolveInternal(bundle, CONFIG.fields.title) || resolveInternal(bundle, ["Title"]);
+    var descriptionInternal = resolveInternal(bundle, CONFIG.fields.description);
+    var articleInternal = resolveInternal(bundle, CONFIG.fields.article);
+    var orderInternal = resolveInternal(bundle, CONFIG.fields.order);
+
+    var modules = bundle.items.map(function (item) {
+      var title = titleInternal ? textValue(item, bundle, [titleInternal]) : moduleTitleFromItem(item, bundle);
+      if (!title) title = "Módulo " + item.Id;
+      var fallback = DEFAULT_MODULES.filter(function (m) { return normalize(m.title) === normalize(title); })[0];
+      return {
+        id: String(item.Id),
+        title: title,
+        description: descriptionInternal ? textValue(item, bundle, [descriptionInternal]) : (fallback ? fallback.description : "Obligaciones y evidencias asociadas al módulo."),
+        article: articleInternal ? textValue(item, bundle, [articleInternal]) : (fallback ? fallback.article : ""),
+        order: orderInternal ? parseFloat(textValue(item, bundle, [orderInternal])) || 999 : (fallback ? DEFAULT_MODULES.indexOf(fallback) + 1 : 999),
+        assessment: fallback ? !!fallback.assessment : normalize(title).indexOf("infraestructura") >= 0
+      };
+    });
+
+    modules.sort(function (a, b) { return a.order - b.order || a.title.localeCompare(b.title); });
+    state.modules = modules;
+  }
+
+  function itemModuleValue(item, bundle) {
+    var direct = textValue(item, bundle, CONFIG.fields.module);
+    if (direct) return direct;
+
+    var candidates = Object.keys(bundle.fieldMap || {});
+    for (var i = 0; i < candidates.length; i++) {
+      if (candidates[i].indexOf("modulo") >= 0 || candidates[i].indexOf("module") >= 0) {
+        var internal = bundle.fieldMap[candidates[i]];
+        if (item.FieldValuesAsText && item.FieldValuesAsText[internal]) return String(item.FieldValuesAsText[internal]);
+        if (item[internal] != null && typeof item[internal] !== "object") return String(item[internal]);
+        if (item[internal + "Id"] != null) return String(item[internal + "Id"]);
+      }
+    }
+    return "";
+  }
+
+  function itemBelongsToModule(item, bundle, module) {
+    var ref = itemModuleValue(item, bundle);
+    if (!ref) return false;
+    var nRef = normalize(ref);
+    var nTitle = normalize(module.title);
+    return nRef === normalize(module.id) || nRef === nTitle || nRef.indexOf(nTitle) >= 0 || nTitle.indexOf(nRef) >= 0;
+  }
+
+  function moduleItems(module) {
+    var bundle = module.assessment ? state.bundles.assessment : state.bundles.matrix;
+    if (!bundle) return [];
+    var matches = bundle.items.filter(function (item) { return itemBelongsToModule(item, bundle, module); });
+    if (!matches.length && module.assessment) return bundle.items.slice();
+    return matches;
+  }
+
+  function dashboardStats() {
+    var bundle = state.bundles.matrix;
+    var items = bundle ? bundle.items : [];
+    var result = { total: items.length, complete: 0, progress: 0, pending: 0, advance: 0 };
+
+    items.forEach(function (item) {
+      var s = normalize(textValue(item, bundle, CONFIG.fields.status));
+      if (s.indexOf("cumpl") >= 0 || s.indexOf("complet") >= 0 || s.indexOf("implement") >= 0 || s.indexOf("cerrad") >= 0) result.complete++;
+      else if (s.indexOf("proceso") >= 0 || s.indexOf("curso") >= 0 || s.indexOf("parcial") >= 0 || s.indexOf("revision") >= 0) result.progress++;
+      else result.pending++;
+    });
+
+    result.advance = result.total ? Math.round((result.complete / result.total) * 100) : 0;
+    return result;
+  }
+
+  function renderShell(content) {
+    var missingAlert = state.missing.length
+      ? '<div class="pc21719-alert"><strong>Configuración incompleta</strong>Faltan estas listas en el sitio: ' + escapeHtml(state.missing.join(", ")) + ". El portal seguirá mostrando lo que pueda resolver.</div>"
+      : "";
+
+    var nav = '<button type="button" data-module="home" class="' + (state.activeModule === "home" ? "is-active" : "") + '">Inicio</button>';
+    state.modules.forEach(function (module) {
+      nav += '<button type="button" data-module="' + escapeHtml(module.id) + '" class="' + (state.activeModule === module.id ? "is-active" : "") + '">' + escapeHtml(module.title) + "</button>";
+    });
+
+    root.innerHTML =
+      '<div class="pc21719-app">' +
+        '<div class="pc21719-topbar">' +
+          '<div class="pc21719-topbar-title"><span class="pc21719-logo">21719</span><span>Microsoft 365 · Portal de Cumplimiento</span></div>' +
+          '<div class="pc21719-topbar-meta"><span class="pc21719-status-dot"></span><span>' + escapeHtml(state.webTitle) + '</span><span>·</span><span>' + escapeHtml(state.userTitle || "Sesión Microsoft 365") + "</span></div>" +
+        "</div>" +
+        '<div class="pc21719-heading"><h1>Portal de Cumplimiento de Protección de Datos Personales</h1><p>Ley N° 21.719 · Obligaciones, controles y evidencias asociadas</p></div>' +
+        '<div class="pc21719-shell">' +
+          '<aside class="pc21719-sidebar"><nav class="pc21719-nav">' + nav + "</nav></aside>" +
+          '<main class="pc21719-main">' + missingAlert + content + "</main>" +
+        "</div>" +
+      "</div>";
+
+    bindNavigation();
+  }
+
+  function renderHome() {
+    var stats = dashboardStats();
+    var cards = state.modules.map(function (module) {
+      var count = moduleItems(module).length;
+      return '<article class="pc21719-module-card" data-open-module="' + escapeHtml(module.id) + '">' +
+        "<h4>" + escapeHtml(module.title) + "</h4>" +
+        "<p>" + escapeHtml(module.description) + "</p>" +
+        '<div class="pc21719-card-footer"><span class="pc21719-pill">' + escapeHtml(module.article || "Módulo") + '</span><span class="pc21719-count">' + count + " registros</span></div>" +
+      "</article>";
+    }).join("");
+
+    var content =
+      '<section class="pc21719-hero"><h2>Centro de obligaciones y evidencias</h2><p>Selecciona un módulo de la Ley 21.719 para revisar qué debe acreditar la organización, consultar el avance y acceder a los registros y evidencias del sitio.</p></section>' +
+      '<div class="pc21719-kpis">' +
+        '<div class="pc21719-kpi"><span>Avance general</span><strong>' + stats.advance + "%</strong></div>" +
+        '<div class="pc21719-kpi"><span>Obligaciones</span><strong>' + stats.total + "</strong></div>" +
+        '<div class="pc21719-kpi"><span>Cumplidas</span><strong>' + stats.complete + "</strong></div>" +
+        '<div class="pc21719-kpi"><span>En proceso</span><strong>' + stats.progress + "</strong></div>" +
+        '<div class="pc21719-kpi"><span>Pendientes</span><strong>' + stats.pending + "</strong></div>" +
+      "</div>" +
+      '<div class="pc21719-section-title"><h3>Módulos de cumplimiento</h3><div class="pc21719-actions"><button class="pc21719-btn" type="button" id="pc21719-refresh">Actualizar datos</button></div></div>' +
+      '<div class="pc21719-modules">' + cards + "</div>";
+
+    renderShell(content);
+
+    Array.prototype.forEach.call(root.querySelectorAll("[data-open-module]"), function (node) {
+      node.addEventListener("click", function () {
+        state.activeModule = node.getAttribute("data-open-module");
+        state.search = "";
+        state.statusFilter = "";
+        render();
+      });
+    });
+
+    var refresh = document.getElementById("pc21719-refresh");
+    if (refresh) refresh.addEventListener("click", reload);
+  }
+
+  function uniqueStatuses(items, bundle) {
+    var map = {};
+    items.forEach(function (item) {
+      var s = textValue(item, bundle, CONFIG.fields.status);
+      if (s) map[s] = true;
+    });
+    return Object.keys(map).sort();
+  }
+
+  function filteredItems(items, bundle) {
+    var q = normalize(state.search);
+    var status = normalize(state.statusFilter);
+    return items.filter(function (item) {
+      if (status && normalize(textValue(item, bundle, CONFIG.fields.status)) !== status) return false;
+      if (!q) return true;
+      var haystack = [
+        textValue(item, bundle, CONFIG.fields.title),
+        textValue(item, bundle, CONFIG.fields.description),
+        textValue(item, bundle, CONFIG.fields.status),
+        textValue(item, bundle, CONFIG.fields.responsible),
+        textValue(item, bundle, CONFIG.fields.observations),
+        textValue(item, bundle, CONFIG.fields.recommendation),
+        textValue(item, bundle, CONFIG.fields.category)
+      ].join(" ");
+      return normalize(haystack).indexOf(q) >= 0;
+    });
+  }
+
+  function renderMatrixModule(module) {
+    var bundle = state.bundles.matrix;
+    var items = bundle ? moduleItems(module) : [];
+    var statuses = uniqueStatuses(items, bundle || { fieldMap: {} });
+    var shown = bundle ? filteredItems(items, bundle) : [];
+
+    var rows = shown.map(function (item) {
+      var title = textValue(item, bundle, CONFIG.fields.title) || ("Registro " + item.Id);
+      var description = textValue(item, bundle, CONFIG.fields.description);
+      var status = textValue(item, bundle, CONFIG.fields.status);
+      var responsible = textValue(item, bundle, CONFIG.fields.responsible);
+      var date = textValue(item, bundle, CONFIG.fields.date);
+      var observations = textValue(item, bundle, CONFIG.fields.observations);
+      return "<tr>" +
+        '<td><div class="pc21719-item-title">' + escapeHtml(title) + '</div>' + (description ? '<div class="pc21719-small">' + escapeHtml(description) + "</div>" : "") + "</td>" +
+        "<td>" + badge(status) + "</td>" +
+        '<td><span class="pc21719-small">' + escapeHtml(responsible || "—") + "</span></td>" +
+        '<td><span class="pc21719-small">' + escapeHtml(displayDate(date)) + "</span></td>" +
+        "<td>" + attachmentHtml(item) + (observations ? '<div class="pc21719-small">' + escapeHtml(observations) + "</div>" : "") + "</td>" +
+        '<td><div class="pc21719-actions"><a class="pc21719-btn" href="' + escapeHtml(nativeFormUrl(bundle, item.Id, "view")) + '" target="_blank" rel="noopener">Ver</a><a class="pc21719-btn pc21719-btn-primary" href="' + escapeHtml(nativeFormUrl(bundle, item.Id, "edit")) + '" target="_blank" rel="noopener">Editar / evidencia</a></div></td>' +
+      "</tr>";
+    }).join("");
+
+    var statusOptions = '<option value="">Todos los estados</option>' + statuses.map(function (s) {
+      return '<option value="' + escapeHtml(s) + '"' + (state.statusFilter === s ? " selected" : "") + ">" + escapeHtml(s) + "</option>";
+    }).join("");
+
+    var content =
+      '<section class="pc21719-hero"><h2>' + escapeHtml(module.title) + "</h2><p>" + escapeHtml(module.description) + (module.article ? " · " + escapeHtml(module.article) : "") + "</p></section>" +
+      '<div class="pc21719-section-title"><h3>Obligaciones y evidencias</h3><span class="pc21719-small">' + shown.length + " de " + items.length + " registros</span></div>" +
+      '<div class="pc21719-filters"><input id="pc21719-search" class="pc21719-input" type="search" placeholder="Buscar obligación, responsable, estado…" value="' + escapeHtml(state.search) + '"><select id="pc21719-status" class="pc21719-select">' + statusOptions + "</select></div>" +
+      '<section class="pc21719-panel"><div class="pc21719-table-wrap"><table class="pc21719-table"><thead><tr><th>Obligación</th><th>Estado</th><th>Responsable</th><th>Fecha</th><th>Evidencias / notas</th><th>Acciones</th></tr></thead><tbody>' +
+        (rows || '<tr><td colspan="6"><div class="pc21719-empty">No hay registros para este módulo o el campo de módulo aún no está relacionado.</div></td></tr>') +
+      "</tbody></table></div></section>";
+
+    renderShell(content);
+    bindFilters();
+  }
+
+  function renderAssessmentModule(module) {
+    var bundle = state.bundles.assessment;
+    var items = bundle ? moduleItems(module) : [];
+    var statuses = uniqueStatuses(items, bundle || { fieldMap: {} });
+    var shown = bundle ? filteredItems(items, bundle) : [];
+    var groups = {};
+
+    shown.forEach(function (item) {
+      var category = textValue(item, bundle, CONFIG.fields.category) || "Sin categoría";
+      if (!groups[category]) groups[category] = [];
+      groups[category].push(item);
+    });
+
+    var groupHtml = Object.keys(groups).sort().map(function (category) {
+      var rows = groups[category].map(function (item) {
+        var title = textValue(item, bundle, CONFIG.fields.title) || ("Control " + item.Id);
+        var description = textValue(item, bundle, CONFIG.fields.description);
+        var level = textValue(item, bundle, CONFIG.fields.level);
+        var status = textValue(item, bundle, CONFIG.fields.status);
+        var recommendation = textValue(item, bundle, CONFIG.fields.recommendation);
+        var responsible = textValue(item, bundle, CONFIG.fields.responsible);
+        var date = textValue(item, bundle, CONFIG.fields.date);
+        return "<tr>" +
+          '<td><div class="pc21719-item-title">' + escapeHtml(title) + '</div>' + (description ? '<div class="pc21719-small">' + escapeHtml(description) + "</div>" : "") + "</td>" +
+          "<td>" + badge(level) + "</td>" +
+          "<td>" + badge(status) + "</td>" +
+          '<td><span class="pc21719-small">' + escapeHtml(recommendation || "—") + "</span></td>" +
+          '<td><span class="pc21719-small">' + escapeHtml(responsible || "—") + (date ? "<br>" + escapeHtml(displayDate(date)) : "") + "</span></td>" +
+          "<td>" + attachmentHtml(item) + "</td>" +
+          '<td><a class="pc21719-btn pc21719-btn-primary" href="' + escapeHtml(nativeFormUrl(bundle, item.Id, "edit")) + '" target="_blank" rel="noopener">Revisar</a></td>' +
+        "</tr>";
+      }).join("");
+
+      return '<section class="pc21719-panel pc21719-category"><div class="pc21719-category-title"><span>' + escapeHtml(category) + '</span><span class="pc21719-small">' + groups[category].length + ' controles</span></div><div class="pc21719-table-wrap"><table class="pc21719-table"><thead><tr><th>Control</th><th>Nivel</th><th>Estado</th><th>Recomendación</th><th>Responsable / fecha</th><th>Evidencias</th><th>Acción</th></tr></thead><tbody>' + rows + "</tbody></table></div></section>";
+    }).join("");
+
+    var statusOptions = '<option value="">Todos los estados</option>' + statuses.map(function (s) {
+      return '<option value="' + escapeHtml(s) + '"' + (state.statusFilter === s ? " selected" : "") + ">" + escapeHtml(s) + "</option>";
+    }).join("");
+
+    var content =
+      '<section class="pc21719-hero"><h2>' + escapeHtml(module.title) + "</h2><p>" + escapeHtml(module.description) + "</p></section>" +
+      '<div class="pc21719-section-title"><h3>Assessment de Seguridad</h3><span class="pc21719-small">' + shown.length + " de " + items.length + " controles</span></div>" +
+      '<div class="pc21719-filters"><input id="pc21719-search" class="pc21719-input" type="search" placeholder="Buscar control, categoría, recomendación…" value="' + escapeHtml(state.search) + '"><select id="pc21719-status" class="pc21719-select">' + statusOptions + "</select></div>" +
+      (groupHtml || '<section class="pc21719-panel"><div class="pc21719-empty">No hay controles disponibles.</div></section>');
+
+    renderShell(content);
+    bindFilters();
+  }
+
+  function bindFilters() {
+    var search = document.getElementById("pc21719-search");
+    var status = document.getElementById("pc21719-status");
+    var timer;
+
+    if (search) search.addEventListener("input", function () {
+      clearTimeout(timer);
+      state.search = search.value;
+      timer = setTimeout(render, 180);
+    });
+
+    if (status) status.addEventListener("change", function () {
+      state.statusFilter = status.value;
+      render();
+    });
+  }
+
+  function bindNavigation() {
+    Array.prototype.forEach.call(root.querySelectorAll("[data-module]"), function (button) {
+      button.addEventListener("click", function () {
+        state.activeModule = button.getAttribute("data-module");
+        state.search = "";
+        state.statusFilter = "";
+        render();
+      });
+    });
+  }
+
+  function render() {
+    if (state.activeModule === "home") {
+      renderHome();
+      return;
+    }
+    var module = state.modules.filter(function (m) { return String(m.id) === String(state.activeModule); })[0];
+    if (!module) {
+      state.activeModule = "home";
+      renderHome();
+      return;
+    }
+    if (module.assessment) renderAssessmentModule(module);
+    else renderMatrixModule(module);
+  }
+
+  function renderFatal(error) {
+    root.innerHTML = '<div style="padding:24px;background:#f5f7f9;min-height:400px"><div class="pc21719-error"><strong>No fue posible inicializar el portal.</strong><p>Revisa permisos, la URL del sitio y que la página esté ejecutándose dentro de SharePoint.</p><div class="pc21719-code">' + escapeHtml(error && error.message ? error.message : error) + "</div></div></div>";
+  }
+
+  function reload() {
+    root.innerHTML = '<div class="pc21719-boot"><div class="pc21719-spinner"></div><strong>Actualizando datos…</strong><span>Consultando SharePoint.</span></div>';
+    state.bundles = {};
+    state.missing = [];
+    initialize(true);
+  }
+
+  function initialize(isReload) {
+    state.webUrl = webUrl();
+    if (!isReload) applyClassicFullBleed();
+
+    Promise.all([
+      api("/_api/web?$select=Title,Url"),
+      api("/_api/web/currentuser?$select=Title,Email"),
+      api("/_api/web/lists?$select=Id,Title,Hidden,BaseTemplate,RootFolder/ServerRelativeUrl&$expand=RootFolder&$top=500")
+    ]).then(function (parts) {
+      state.webTitle = parts[0].Title || "SharePoint";
+      state.userTitle = parts[1].Title || parts[1].Email || "";
+      state.allLists = parts[2].value || parts[2].results || [];
+
+      return Promise.all([
+        loadBundle("modules"),
+        loadBundle("matrix"),
+        loadBundle("assessment"),
+        loadBundle("categories"),
+        loadBundle("executive")
+      ]);
+    }).then(function () {
+      buildModules();
+      render();
+    }).catch(renderFatal);
+  }
+
+  initialize(false);
+})();
+</script>
