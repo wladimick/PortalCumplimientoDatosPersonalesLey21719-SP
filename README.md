@@ -1,16 +1,14 @@
-# TIBOX Compliance — Portal de Cumplimiento
+# TIBOX Compliance
 
-Aplicación SaaS multi-tenant de TIBOX para que cada cliente gestione y visualice su cumplimiento, obligaciones, controles, responsables, evidencias, planes de acción y auditoría desde una experiencia propia de TIBOX.
+Aplicación SaaS multi-tenant de TIBOX para que cada cliente gestione y visualice cumplimiento, obligaciones, controles, responsables, evidencias, planes de acción y auditoría desde una experiencia propia.
 
-> **Dominio propuesto:** `https://cumplimiento.tibox.cl`
+> **Dominio objetivo:** `https://cumplimiento.tibox.cl`
 >
-> **Estado:** arquitectura y producto en definición. Las decisiones de negocio pendientes están centralizadas en [`docs/DECISIONES-PAULA.md`](docs/DECISIONES-PAULA.md).
+> **Estado actual:** MVP ejecutable en desarrollo. La aplicación Next.js, autenticación Supabase, shell multi-tenant, dashboard, matriz, assessment y tablero de decisiones para Paula ya están versionados en `main`.
 
 ## Cambio de foco
 
-El proyecto nació como un portal HTML sobre SharePoint. Ese prototipo se conserva como referencia técnica en `portal/`, pero **ya no es la arquitectura objetivo**.
-
-La solución objetivo es una aplicación web propia:
+El proyecto nació como un portal HTML sobre SharePoint. Ese prototipo se conserva en `portal/` como referencia histórica, pero **ya no es la arquitectura objetivo**.
 
 ```text
 Usuario cliente / Equipo TIBOX
@@ -22,146 +20,178 @@ Usuario cliente / Equipo TIBOX
           │
         Vercel
           │
-  ┌───────┴────────┐
-  │                │
-Supabase       Integraciones
-Auth/DB/Storage   Microsoft 365
-  │                │
-  └───────┬────────┘
-          ▼
-     Datos por cliente
+  ┌───────┴────────────┐
+  │                    │
+Supabase          Integraciones
+Auth/PostgreSQL     Microsoft 365
+  │                    │
+  └────────┬───────────┘
+           ▼
+      Organizaciones
+      aisladas por RLS
 ```
 
-## Objetivos
-
-- Una sola aplicación central mantenida por TIBOX.
-- Vista segregada por cliente/organización.
-- Administración global para TIBOX sin mezclar datos entre clientes.
-- Seguridad multi-tenant respaldada por Row Level Security, no solo por la interfaz.
-- Trazabilidad completa de cambios relevantes.
-- Soportar Ley N° 21.719 como primer marco y dejar preparada la arquitectura para otros marcos.
-- Permitir evidencias en Supabase Storage o, en una etapa posterior, en Microsoft SharePoint según política de cada cliente.
-- Desplegar mediante GitHub + Vercel con previews por Pull Request.
-- Mantener un sistema visual consistente con la marca TIBOX.
-
-## Stack propuesto
+## Stack del MVP
 
 | Capa | Tecnología |
 |---|---|
-| Framework | Next.js 16 + React + TypeScript |
+| Framework | Next.js 16.3 + React 19 + TypeScript |
 | Hosting / CI-CD | Vercel |
 | Base de datos | Supabase PostgreSQL |
-| Autenticación | Supabase Auth; Microsoft Entra ID como opción prioritaria |
-| Autorización | PostgreSQL RLS + roles de aplicación |
-| Archivos | Proveedor abstraído: Supabase Storage y futura integración SharePoint |
-| Validación | Zod |
-| UI | CSS/Tailwind siguiendo el Design System TIBOX |
-| Iconografía | Lucide / SVG de línea |
-| Observabilidad | Vercel + eventos de aplicación + auditoría propia |
+| Autenticación | Supabase Auth con SSR/cookies |
+| Autorización | PostgreSQL Row Level Security + membresías por organización |
+| Archivos | Modelo preparado; proveedor pendiente de decisión P07 |
+| UI | CSS propio basado en Design System TIBOX |
+| Iconografía | Lucide React |
 | Código | GitHub |
 
-## Principio multi-tenant
+La implementación SSR usa `@supabase/ssr`; no utiliza los antiguos `auth-helpers`.
 
-Toda información perteneciente a un cliente debe estar asociada a `organization_id` y protegida por políticas RLS.
+## Qué funciona en esta iteración
+
+- Login con usuarios existentes de Supabase Auth.
+- Sesión SSR y protección de rutas con `proxy.ts`.
+- Selector de organizaciones.
+- Contexto multi-tenant por `organization_id`.
+- Dashboard ejecutivo.
+- Nueve módulos de cumplimiento.
+- Matriz de obligaciones Ley 21.719 de demostración.
+- Assessment técnico por categorías.
+- Plan de acción.
+- Navegación preparada para Evidencias y Reportes.
+- Espacio interno TIBOX.
+- Tablero de las 23 decisiones pendientes para Paula.
+- Respuesta/estado de cada decisión directamente desde la aplicación.
+- Registro de cambios de decisiones en `audit_events`.
+- RLS en todas las tablas del MVP.
+
+## Instalación de Supabase — por ahora manual
+
+La fuente de verdad del esquema está en:
 
 ```text
-Usuario
-  └─ membership
-      └─ organization_id
-          ├─ obligaciones
-          ├─ controles
-          ├─ acciones
-          ├─ evidencias
-          └─ reportes
+supabase/migrations/20260826120000_initial_mvp.sql
 ```
 
-Un usuario de una organización **no debe poder consultar otra organización aunque altere la URL, el JavaScript o una llamada API**.
+Mientras el nuevo proyecto Supabase no esté conectado a las herramientas de desarrollo, copiar el SQL completo y ejecutarlo en **Supabase > SQL Editor**.
 
-## Roles iniciales propuestos
+Guía detallada: [`docs/SUPABASE-MANUAL.md`](docs/SUPABASE-MANUAL.md).
 
-- `platform_admin`: administración global TIBOX.
-- `platform_support`: soporte TIBOX con acceso controlado y auditable.
-- `org_admin`: administrador del cliente.
-- `compliance_manager`: encargado de cumplimiento.
-- `contributor`: responsable que actualiza controles/acciones/evidencias.
-- `auditor`: revisión y observaciones.
-- `viewer`: solo lectura.
+El script crea dos espacios de piloto:
 
-Los alcances exactos deben validarse antes de producción.
+- `TIBOX`: espacio interno donde Paula puede responder decisiones.
+- `Cliente Demo`: vista cliente en modo lectura.
+
+Los usuarios Auth existentes al momento de ejecutar la migración se asignan temporalmente a ambos para facilitar la demo. Este bootstrap se reemplazará por invitaciones antes del primer cliente real.
+
+## Variables requeridas
+
+```bash
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+```
+
+No se necesita contraseña de PostgreSQL ni `service_role` para el frontend actual. No deben subirse al repositorio.
+
+## Ejecución local
+
+```bash
+npm install
+npm run dev
+```
+
+Luego abrir `http://localhost:3000`.
+
+## Seguridad multi-tenant
+
+Toda información de cliente debe llevar `organization_id`. El aislamiento no depende del menú ni de esconder botones: se valida en PostgreSQL mediante RLS.
+
+```text
+Auth user
+   │
+   ▼
+organization_memberships
+   │
+   ├─ TIBOX
+   └─ Cliente Demo
+          │
+          ├─ obligations
+          ├─ security_controls
+          ├─ action_items
+          ├─ evidence
+          └─ audit_events
+```
+
+Un usuario no debe poder acceder a una organización distinta modificando la URL o haciendo llamadas directas a Supabase.
+
+### Roles del cliente implementados en el esquema
+
+- `org_admin`
+- `compliance_manager`
+- `contributor`
+- `auditor`
+- `viewer`
+
+Los roles de plataforma TIBOX (`platform_admin`, soporte temporal, etc.) siguen documentados como arquitectura futura y **todavía no se implementan** para no abrir acceso transversal prematuramente.
+
+## Reglas de seguridad del MVP
+
+- RLS habilitado en todas las tablas de negocio.
+- Clave publishable únicamente en cliente; ningún secreto administrativo en navegador.
+- `audit_events` es append-only para usuarios de aplicación.
+- Membresía obligatoria para leer datos de una organización.
+- Escritura limitada por rol.
+- El bootstrap que entrega acceso a usuarios existentes es solo para la demo interna.
+- Evidencias físicas no se habilitan hasta cerrar P07.
+- La fórmula de score actual es demostrativa y no debe presentarse como criterio legal definitivo hasta cerrar P11.
 
 ## Documentación
 
 | Documento | Contenido |
 |---|---|
 | [`docs/PRODUCTO.md`](docs/PRODUCTO.md) | visión, usuarios, módulos y alcance |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | arquitectura objetivo y límites |
-| [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | entidades y reglas multi-tenant |
-| [`docs/SEGURIDAD.md`](docs/SEGURIDAD.md) | modelo de amenazas y controles |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | arquitectura y límites |
+| [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | entidades y multi-tenancy |
+| [`docs/SEGURIDAD.md`](docs/SEGURIDAD.md) | amenazas y controles |
 | [`docs/ROLES-PERMISOS.md`](docs/ROLES-PERMISOS.md) | RBAC + RLS |
-| [`docs/AUDITORIA.md`](docs/AUDITORIA.md) | bitácora, trazabilidad y retención |
-| [`docs/PRIVACIDAD-GOBIERNO-DATOS.md`](docs/PRIVACIDAD-GOBIERNO-DATOS.md) | clasificación y tratamiento de datos |
-| [`docs/INTEGRACIONES.md`](docs/INTEGRACIONES.md) | SharePoint, Microsoft 365 y extensiones |
+| [`docs/AUDITORIA.md`](docs/AUDITORIA.md) | bitácora y trazabilidad |
+| [`docs/PRIVACIDAD-GOBIERNO-DATOS.md`](docs/PRIVACIDAD-GOBIERNO-DATOS.md) | gobierno de datos |
+| [`docs/INTEGRACIONES.md`](docs/INTEGRACIONES.md) | Microsoft 365 / SharePoint / WebOps |
 | [`docs/DOMINIO-DESPLIEGUE.md`](docs/DOMINIO-DESPLIEGUE.md) | Vercel, dominio y ambientes |
-| [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) | aplicación del sistema visual TIBOX |
-| [`docs/OPERACION.md`](docs/OPERACION.md) | soporte, backups, observabilidad y respuesta |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | fases de implementación |
-| [`docs/DECISIONES-PAULA.md`](docs/DECISIONES-PAULA.md) | preguntas de negocio pendientes |
-| [`docs/INSTALLATION.md`](docs/INSTALLATION.md) | instalación del prototipo SharePoint legado |
+| [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) | sistema visual TIBOX |
+| [`docs/OPERACION.md`](docs/OPERACION.md) | operación y continuidad |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | fases |
+| [`docs/DECISIONES-PAULA.md`](docs/DECISIONES-PAULA.md) | decisiones de negocio |
+| [`docs/SUPABASE-MANUAL.md`](docs/SUPABASE-MANUAL.md) | instalación manual de base/RLS/seed |
 
-## Estructura objetivo
+## Estructura actual
 
 ```text
 /
-├── app/                       # Next.js App Router
-├── components/                # UI reutilizable
-├── lib/                       # auth, seguridad, datos, integraciones
-├── public/
+├── app/                         # Next.js App Router
+│   ├── login/
+│   ├── auth/
+│   └── app/[orgSlug]/
+├── components/
+├── lib/
+│   ├── data/
+│   └── supabase/
 ├── supabase/
-│   └── migrations/            # esquema y políticas RLS versionadas
+│   └── migrations/
 ├── docs/
-├── portal/                    # prototipo SharePoint legado
+├── portal/                      # prototipo SharePoint legado
+├── proxy.ts
 ├── .env.example
 ├── package.json
 └── README.md
 ```
 
-## Alcance inicial del producto
+## Próximos pasos inmediatos
 
-### MVP cliente
-
-1. Inicio / Resumen ejecutivo.
-2. Matriz de cumplimiento Ley 21.719.
-3. Módulos y obligaciones.
-4. Assessment de seguridad.
-5. Responsables y plan de acción.
-6. Evidencias.
-7. Historial / auditoría visible según rol.
-8. Reportes básicos.
-
-### MVP TIBOX
-
-1. Selector/listado de clientes.
-2. Estado resumido de cada cliente.
-3. Gestión de organizaciones y usuarios.
-4. Acceso de soporte explícito y auditado.
-5. Catálogo maestro de marcos, controles y plantillas.
-
-## Seguridad: reglas no negociables
-
-- RLS habilitado en todas las tablas con datos de cliente.
-- `SUPABASE_SERVICE_ROLE_KEY` solo en servidor; nunca en navegador.
-- Validación de entrada en servidor.
-- Separación entre rol TIBOX y rol dentro de una organización.
-- Auditoría append-only para acciones sensibles.
-- Evidencias privadas por defecto.
-- Principio de mínimo privilegio.
-- Secretos solo en variables de entorno de Vercel/Supabase.
-- Ningún dato sensible en logs técnicos o errores mostrados al usuario.
-
-## Prototipo SharePoint legado
-
-`portal/portal.html` se mantiene como referencia de la primera exploración. No se considera el frontend objetivo ni debe recibir nuevas funcionalidades salvo correcciones necesarias para conservar la demo.
-
-## Próximo hito
-
-Cerrar las decisiones de [`docs/DECISIONES-PAULA.md`](docs/DECISIONES-PAULA.md), congelar el alcance MVP y recién después implementar autenticación, esquema Supabase, RLS y shell de la aplicación.
+1. Ejecutar la migración inicial en el nuevo proyecto Supabase.
+2. Configurar URL y publishable key en Vercel.
+3. Validar login y RLS con los usuarios del piloto.
+4. Compartir la aplicación con Paula.
+5. Registrar sus respuestas en **Decisiones Paula**.
+6. Con esas respuestas, congelar autenticación, evidencias, score, reportes, modelo comercial y residencia de datos antes de continuar con funcionalidades productivas.
