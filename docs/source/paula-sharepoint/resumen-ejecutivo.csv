@@ -1,0 +1,5 @@
+"Título","Codigo","Valor","Unidad","Descripcion","Orden"
+"Avance documental","AVANCE_DOCUMENTAL","67","%","16 de 24 evidencias conformes","1"
+"Avance técnico","AVANCE_TECNICO","43","%","25 de 58 controles implementados","2"
+"Evidencias pendientes","EVIDENCIAS_PENDIENTES","8","","Requieren gestión documental","3"
+"Controles pendientes","CONTROLES_PENDIENTES","33","","Requieren implementación o revisión","4"
