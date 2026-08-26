@@ -6,7 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -24,6 +23,6 @@
     "typescript": "^5.9.2"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "24.x"
   }
 }
