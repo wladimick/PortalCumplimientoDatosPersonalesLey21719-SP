@@ -18,6 +18,7 @@ Orden recomendado de lectura:
 14. [`ROADMAP.md`](ROADMAP.md) — plan de implementación.
 15. [`DECISIONES-PAULA.md`](DECISIONES-PAULA.md) — decisiones de negocio pendientes.
 16. [`SUPABASE-MANUAL.md`](SUPABASE-MANUAL.md) — instalación manual del esquema, RLS y seed del piloto.
+17. [`VERCEL-MANUAL.md`](VERCEL-MANUAL.md) — variables de entorno, redeploy y validación del piloto.
 
 ## Implementación actual
 
