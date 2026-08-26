@@ -1,0 +1,555 @@
+/*
+ * TIBOX WebOps Design System — shared foundations for Compliance
+ * Source of truth adapted from WebOps-Tibox/app/globals.css and
+ * WebOps-Tibox/app/design-system-foundations.css.
+ *
+ * This file intentionally uses plain CSS (no Tailwind directives) so the
+ * Compliance portal can reuse the WebOps language without adding Tailwind.
+ */
+
+:root {
+  /* Brand */
+  --tbx-brand: #0026bb;
+  --tbx-blue: #0e9cdc;
+  --tbx-cyan: #00d1ff;
+  --tbx-orange: #ff4222;
+  --tbx-orange-2: #ea7f18;
+  --tbx-amber: #ffb200;
+  --tbx-dark: #000310;
+  --tbx-navy: #020b26;
+
+  /* Canonical WebOps action aliases */
+  --tbx-cta: var(--tbx-orange);
+  --tbx-support: var(--tbx-cyan);
+  --tbx-support-light: var(--tbx-blue);
+
+  /* Application surfaces */
+  --tbx-bg: #f4f6fa;
+  --tbx-bg-light: #f4f6fa;
+  --tbx-surface: #ffffff;
+  --tbx-surface-light: #ffffff;
+  --tbx-surface-2: #f8fafc;
+  --tbx-surface-3: #eef2f7;
+  --tbx-border: rgba(15, 23, 42, 0.12);
+  --tbx-border-light: rgba(15, 23, 42, 0.12);
+  --tbx-border-strong: rgba(14, 156, 220, 0.3);
+
+  /* Text */
+  --tbx-text: #0f172a;
+  --tbx-text-light: #0f172a;
+  --tbx-muted: #64748b;
+  --tbx-subtle: #94a3b8;
+  --tbx-text-dark: #f4f7ff;
+  --tbx-text-muted: #9ba6c4;
+  --tbx-text-subtle: #5e6a8a;
+
+  /* Semantic status */
+  --tbx-success: #1d9e75;
+  --tbx-warning: #ba7517;
+  --tbx-danger: #e24b4a;
+  --tbx-green: #1d9e75;
+  --tbx-red: #e24b4a;
+
+  /* Typography — WebOps foundation */
+  --tbx-font-caption: 0.8125rem;
+  --tbx-font-body: 0.875rem;
+  --tbx-font-subtitle: 0.9375rem;
+  --tbx-font-card-title: 1rem;
+  --tbx-font-section-title: 1.125rem;
+  --tbx-font-page-title: 1.5rem;
+
+  /* Geometry */
+  --tbx-radius-sm: 8px;
+  --tbx-radius: 12px;
+  --tbx-radius-lg: 16px;
+  --tbx-radius-xl: 22px;
+  --tbx-sidebar: 224px;
+
+  /* Elevation */
+  --tbx-shadow-sm: 0 1px 2px rgba(0, 18, 51, 0.04), 0 4px 14px rgba(0, 18, 51, 0.035);
+  --tbx-shadow-md: 0 12px 34px rgba(0, 18, 51, 0.09);
+  --tbx-shadow-lg: 0 26px 70px rgba(0, 3, 16, 0.18);
+
+  /* Shared semantic surface contract */
+  --tbx-card-bg: #ffffff;
+  --tbx-card-muted: #f8fafc;
+  --tbx-card-border: rgba(15, 23, 42, 0.12);
+  --tbx-card-text: #0f172a;
+  --tbx-card-muted-text: #64748b;
+  --tbx-panel-bg: #ffffff;
+}
+
+html[data-theme="dark"] {
+  --tbx-bg: #000310;
+  --tbx-bg-light: #000310;
+  --tbx-surface: #0a1130;
+  --tbx-surface-light: #0a1130;
+  --tbx-surface-2: #121a40;
+  --tbx-surface-3: #19224d;
+  --tbx-border: rgba(255, 255, 255, 0.09);
+  --tbx-border-light: rgba(255, 255, 255, 0.09);
+  --tbx-border-strong: rgba(0, 209, 255, 0.28);
+  --tbx-text: #f4f7ff;
+  --tbx-text-light: #f4f7ff;
+  --tbx-muted: #a8b3cf;
+  --tbx-subtle: #7e8aab;
+  --tbx-success: #5bd194;
+  --tbx-warning: #ffc857;
+  --tbx-danger: #ff7c70;
+  --tbx-card-bg: #0a1130;
+  --tbx-card-muted: #121a40;
+  --tbx-card-border: rgba(255, 255, 255, 0.09);
+  --tbx-card-text: #f4f7ff;
+  --tbx-card-muted-text: #a8b3cf;
+  --tbx-panel-bg: #0a1130;
+}
+
+/* Shared surfaces */
+.tbx-card,
+.tbx-surface-card {
+  background: var(--tbx-card-bg);
+  border: 1px solid var(--tbx-card-border);
+  color: var(--tbx-card-text);
+  box-shadow: var(--tbx-shadow-sm);
+}
+
+.tbx-surface-muted {
+  background: var(--tbx-card-muted);
+}
+
+.tbx-card {
+  border-radius: var(--tbx-radius-lg);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.tbx-card-interactive:hover {
+  border-color: rgba(14, 156, 220, 0.28);
+  box-shadow: var(--tbx-shadow-md);
+  transform: translateY(-1px);
+}
+
+.tbx-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+}
+
+/* Shared typography helpers */
+.tbx-page-title {
+  margin: 0;
+  font-size: var(--tbx-font-page-title);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.tbx-section-title {
+  margin: 0;
+  font-size: var(--tbx-font-section-title);
+  line-height: 1.35;
+}
+
+.tbx-card-title {
+  margin: 0;
+  font-size: var(--tbx-font-card-title);
+  line-height: 1.35;
+}
+
+.tbx-caption {
+  font-size: var(--tbx-font-caption);
+  color: var(--tbx-card-muted-text);
+}
+
+/* App shell normalization — mirrors WebOps behavior while keeping the portal's
+   existing class names intact. */
+.sidebar {
+  background: var(--tbx-navy);
+  border-right-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 10px 0 35px rgba(0, 3, 16, 0.1);
+}
+
+.nav-link {
+  border-left: 2px solid transparent;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.nav-link.active {
+  color: var(--tbx-cyan);
+  background: rgba(0, 209, 255, 0.07);
+  border-left-color: var(--tbx-cyan);
+  box-shadow: none;
+}
+
+.card,
+.kpi-card,
+.module-card {
+  background: var(--tbx-card-bg);
+  border-color: var(--tbx-card-border);
+  color: var(--tbx-card-text);
+  box-shadow: var(--tbx-shadow-sm);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--tbx-orange-2), var(--tbx-orange));
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.055);
+  box-shadow: 0 8px 20px rgba(255, 66, 34, 0.2);
+}
+
+.btn-secondary {
+  background: var(--tbx-card-bg);
+  color: var(--tbx-card-text);
+  border-color: var(--tbx-card-border);
+}
+
+.input,
+.textarea,
+.select {
+  background: var(--tbx-card-bg);
+  color: var(--tbx-card-text);
+  border-color: var(--tbx-card-border);
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: var(--tbx-blue);
+  box-shadow: 0 0 0 3px rgba(14, 156, 220, 0.1);
+}
+
+/* --------------------------------------------------------------------------
+   Shared TIBOX authentication layout
+   Inspired by the supplied split-login reference, expressed with TIBOX tokens.
+   -------------------------------------------------------------------------- */
+.login-split-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(460px, 1.08fr);
+  background: #fff;
+  overflow: hidden;
+}
+
+.login-story-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100dvh;
+  padding: clamp(32px, 5vw, 72px);
+  color: #f4f7ff;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(0, 209, 255, 0.22), transparent 30%),
+    radial-gradient(circle at 88% 84%, rgba(255, 66, 34, 0.16), transparent 30%),
+    linear-gradient(145deg, #000310 0%, #061658 38%, #0026bb 72%, #0e9cdc 120%);
+}
+
+.login-story-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.32;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(135deg, #000 0%, transparent 82%);
+}
+
+.login-story-panel::after {
+  content: "";
+  position: absolute;
+  width: min(48vw, 560px);
+  aspect-ratio: 1;
+  right: -22%;
+  bottom: -28%;
+  z-index: -1;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 54px rgba(255,255,255,0.03),
+    0 0 0 108px rgba(255,255,255,0.02);
+}
+
+.login-story-inner {
+  width: min(100%, 620px);
+  min-height: calc(100dvh - clamp(64px, 10vw, 144px));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.login-story-panel .tibox-brand {
+  color: #fff;
+}
+
+.login-story-panel .tibox-logo {
+  width: 126px;
+}
+
+.login-story-panel .tibox-product-name {
+  color: rgba(255,255,255,0.78);
+  border-left-color: rgba(255,255,255,0.35);
+}
+
+.login-story-copy {
+  margin: auto 0;
+  padding: clamp(54px, 9vh, 110px) 0;
+  max-width: 540px;
+}
+
+.login-story-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9eeeff;
+}
+
+.login-story-kicker::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tbx-cyan);
+  box-shadow: 0 0 0 5px rgba(0, 209, 255, 0.12);
+}
+
+.login-story-copy h1 {
+  max-width: 520px;
+  margin: 0;
+  font-size: clamp(2.35rem, 5vw, 4.35rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+}
+
+.login-story-copy p {
+  max-width: 500px;
+  margin: 24px 0 0;
+  color: rgba(236, 243, 255, 0.76);
+  font-size: clamp(1rem, 1.4vw, 1.12rem);
+  line-height: 1.65;
+}
+
+.login-story-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(236,243,255,0.55);
+  font-size: 0.78rem;
+}
+
+.login-story-footer::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: rgba(255,255,255,0.32);
+}
+
+.login-access-panel {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(28px, 5vw, 72px);
+  background:
+    radial-gradient(circle at 86% 4%, rgba(0, 209, 255, 0.07), transparent 23rem),
+    #f8fafc;
+}
+
+.login-access-wrap {
+  width: min(100%, 460px);
+}
+
+.login-mobile-brand {
+  display: none;
+  margin-bottom: 28px;
+}
+
+.login-card {
+  width: 100%;
+  margin: 0;
+  padding: clamp(30px, 5vw, 44px);
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 24px;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 30px 80px rgba(0,18,51,0.11);
+}
+
+.login-card-header {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.login-card-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--tbx-blue);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.login-card-eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tbx-cyan);
+}
+
+.login-card h1,
+.login-card-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.85rem, 4vw, 2.25rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  font-weight: 600;
+}
+
+.login-card-header p {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.login-split-shell .login-form {
+  display: grid;
+  gap: 12px;
+}
+
+.login-split-shell .field {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.login-split-shell .field label {
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.login-split-shell .input {
+  min-height: 46px;
+  padding: 10px 13px;
+  border: 1px solid rgba(15, 23, 42, 0.13);
+  border-radius: 11px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: inset 0 1px 1px rgba(15,23,42,0.015);
+}
+
+.login-split-shell .input::placeholder {
+  color: #a3adbc;
+}
+
+.login-split-shell .input:focus {
+  border-color: var(--tbx-blue);
+  box-shadow: 0 0 0 3px rgba(14,156,220,0.1);
+  outline: none;
+}
+
+.login-split-shell .btn {
+  min-height: 46px;
+  margin-top: 2px;
+  border-radius: 11px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.login-split-shell .btn-primary {
+  margin-top: 6px;
+}
+
+.login-split-shell .btn-secondary {
+  color: #334155;
+  background: #fff;
+  border-color: rgba(15,23,42,0.12);
+}
+
+.login-split-shell .btn-secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: rgba(14,156,220,0.28);
+}
+
+.login-split-shell .btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-split-shell .form-error,
+.login-split-shell .form-success {
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+.login-access-note {
+  margin: 18px 0 0;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 920px) {
+  .login-split-shell {
+    grid-template-columns: minmax(0, 1fr);
+    background: #f8fafc;
+  }
+
+  .login-story-panel {
+    display: none;
+  }
+
+  .login-access-panel {
+    min-height: 100dvh;
+    padding: 28px 20px;
+  }
+
+  .login-mobile-brand {
+    display: flex;
+    justify-content: center;
+  }
+
+  .login-card {
+    border-radius: 20px;
+    box-shadow: 0 18px 50px rgba(0,18,51,0.09);
+  }
+}
+
+@media (max-width: 520px) {
+  .login-access-panel {
+    align-items: start;
+    padding-top: 34px;
+  }
+
+  .login-card {
+    padding: 28px 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tbx-card,
+  .btn,
+  .nav-link,
+  .input,
+  .textarea,
+  .select {
+    transition: none !important;
+  }
+}
