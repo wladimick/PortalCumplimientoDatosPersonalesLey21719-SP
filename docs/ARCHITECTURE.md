@@ -1,290 +1,221 @@
-# Arquitectura del Portal de Cumplimiento
+# Arquitectura objetivo — TIBOX Compliance
 
-## 1. Principio de diseño
+## 1. Propósito
 
-La solución se divide en tres capas:
+TIBOX Compliance será una aplicación SaaS multi-tenant operada por TIBOX. Cada cliente accede a una vista aislada de su organización y TIBOX dispone de una capa administrativa global.
 
-1. **Presentación**: un frontend autocontenido en HTML/CSS/JavaScript.
-2. **Datos**: listas nativas de SharePoint Online.
-3. **Seguridad**: permisos y sesión nativa de Microsoft 365/SharePoint.
+La Ley N° 21.719 es el primer marco funcional, pero la arquitectura debe permitir incorporar otros marcos, evaluaciones o servicios sin rehacer el núcleo.
 
-El objetivo del MVP es que el portal pueda copiarse entre sitios sin cambiar URLs, credenciales o IDs específicos del tenant.
+## 2. Principios
 
-## 2. Arquitectura lógica
+1. **Multi-tenant desde la base de datos.** La separación de clientes no depende de filtros React.
+2. **Backend seguro.** Toda operación privilegiada ocurre en servidor.
+3. **Mínimo privilegio.** Usuarios, soporte e integraciones reciben solo el acceso necesario.
+4. **Auditable por diseño.** Cambios sensibles generan eventos de auditoría.
+5. **Proveedor de evidencias desacoplado.** La UI no depende de Supabase Storage o SharePoint.
+6. **Una sola base de código.** Configuración por organización, no forks por cliente.
+7. **Evolución incremental.** Empezar con Ley 21.719 y crecer por módulos.
 
-```text
-┌───────────────────────────────────────────┐
-│ Página clásica SharePoint                 │
-│                                           │
-│  Script Editor Web Part                   │
-│  ┌─────────────────────────────────────┐  │
-│  │ portal.html                         │  │
-│  │                                     │  │
-│  │ UI                                  │  │
-│  │ Data Adapter                        │  │
-│  │ SharePoint REST Client              │  │
-│  └─────────────────────────────────────┘  │
-└─────────────────┬─────────────────────────┘
-                  │ same-origin REST
-                  ▼
-┌───────────────────────────────────────────┐
-│ SharePoint REST API                       │
-│ /_api/web                                 │
-│ /_api/web/lists                          │
-└─────────────────┬─────────────────────────┘
-                  │
-                  ▼
-┌───────────────────────────────────────────┐
-│ Listas del sitio                          │
-│ - Módulos del Portal                      │
-│ - Matriz de Cumplimiento                  │
-│ - Assessment de Seguridad                 │
-│ - Categorías de Seguridad                 │
-│ - Resumen Ejecutivo                       │
-└───────────────────────────────────────────┘
-```
-
-## 3. Portabilidad
-
-El portal no debe contener valores como:
+## 3. Componentes
 
 ```text
-https://cliente.sharepoint.com/sites/PortalCumplimiento
+Internet
+  │
+  ▼
+cumplimiento.tibox.cl
+  │
+  ▼
+Vercel / Next.js
+  ├─ React UI
+  ├─ Server Components
+  ├─ Route Handlers / Server Actions
+  ├─ autorización de aplicación
+  └─ integraciones
+        │
+        ├──────────────┐
+        ▼              ▼
+     Supabase       Microsoft 365
+   ┌───────────┐       Graph
+   │ Auth      │         │
+   │ Postgres  │      SharePoint
+   │ Storage   │     (opcional)
+   └───────────┘
 ```
 
-En su lugar obtiene el contexto desde SharePoint:
+## 4. Frontend
 
-```javascript
-_spPageContextInfo.webAbsoluteUrl
+**Next.js 16 + React + TypeScript**, App Router.
+
+Responsabilidades:
+
+- renderizar dashboard, matrices, controles y formularios;
+- navegación por organización;
+- componentes del Design System TIBOX;
+- accesibilidad y responsive;
+- mostrar solo acciones permitidas al usuario.
+
+La ocultación de botones es UX, **no seguridad**. La seguridad real se resuelve en servidor y RLS.
+
+## 5. Backend de aplicación
+
+Se priorizan Server Components, Server Actions o Route Handlers para operaciones que requieren validación, autorización, secretos o integración con APIs externas.
+
+Reglas:
+
+- validar payloads con Zod;
+- resolver usuario y organización en servidor;
+- no aceptar `organization_id` del navegador como fuente de confianza sin comprobar membership;
+- no exponer claves privilegiadas;
+- generar `request_id` para trazabilidad de operaciones sensibles.
+
+## 6. Supabase
+
+### Auth
+
+Supabase Auth administra sesiones. La opción prioritaria para clientes corporativos es Microsoft Entra ID. Se deja abierta la posibilidad de login por correo para clientes sin Microsoft 365, sujeto a decisión de producto.
+
+### PostgreSQL
+
+Fuente principal de verdad para:
+
+- organizaciones;
+- usuarios y memberships;
+- marcos de cumplimiento;
+- módulos y obligaciones;
+- assessments;
+- responsables y planes de acción;
+- referencias a evidencias;
+- configuración de integraciones;
+- auditoría.
+
+### Row Level Security
+
+Todas las tablas que contienen datos de cliente incluyen `organization_id` y políticas RLS.
+
+Patrón conceptual:
+
+```sql
+organization_memberships
+  user_id
+  organization_id
+  role
+
+obligations
+  organization_id
+  ...
 ```
 
-Si el objeto no estuviera disponible, se utiliza la URL actual como fallback.
+Una consulta a `obligations` solo retorna filas cuya organización esté incluida en las memberships autorizadas del usuario.
 
-Esto permite reutilizar exactamente el mismo archivo en diferentes sitios y tenants.
+## 7. Separación entre plataforma y organización
 
-## 4. Descubrimiento de listas
-
-El frontend consulta primero:
+No mezclar permisos TIBOX con permisos del cliente.
 
 ```text
-/_api/web/lists
+platform role
+  ├─ platform_admin
+  └─ platform_support
+
+organization role
+  ├─ org_admin
+  ├─ compliance_manager
+  ├─ contributor
+  ├─ auditor
+  └─ viewer
 ```
 
-Luego compara los títulos encontrados contra aliases configurados.
+Una persona puede pertenecer a múltiples organizaciones, pero cada operación debe ejecutarse en un contexto de organización explícito.
 
-Ejemplo:
+## 8. Evidencias
 
-```javascript
-modules: [
-  "Módulos del Portal",
-  "Modulos del Portal"
-]
-```
-
-Una vez localizada una lista se utiliza su GUID para las consultas posteriores. Esto evita depender de caracteres especiales o espacios en la URL.
-
-## 5. Descubrimiento de columnas
-
-No se deben hardcodear nombres internos generados por SharePoint, por ejemplo:
+Se define una interfaz lógica `EvidenceProvider`.
 
 ```text
-Descripci_x00f3_n
+EvidenceProvider
+  ├─ SupabaseStorageProvider
+  └─ SharePointProvider   (fase posterior)
 ```
 
-El portal consulta los metadatos de campos de cada lista y construye un mapa:
+La base de datos conserva metadata común:
+
+- organización;
+- obligación/control asociado;
+- nombre de archivo;
+- tipo de evidencia;
+- proveedor;
+- identificador externo/objeto;
+- fecha de carga;
+- cargado por;
+- vigencia opcional;
+- checksum opcional.
+
+Así se puede cambiar el almacenamiento sin reescribir los módulos funcionales.
+
+## 9. Microsoft 365 / SharePoint
+
+SharePoint deja de ser el frontend. Pasa a ser una integración opcional para organizaciones que quieran mantener evidencias en su tenant.
+
+La integración se realizará mediante Microsoft Graph y deberá definir:
+
+- consentimiento por cliente;
+- modalidad delegada o aplicación;
+- sitio/biblioteca destino;
+- permisos mínimos;
+- tratamiento de tokens;
+- reconexión y revocación.
+
+No se implementará hasta cerrar la decisión de producto y seguridad correspondiente.
+
+## 10. Auditoría
+
+La auditoría de negocio vive en PostgreSQL y no depende de los logs efímeros de Vercel.
+
+Eventos mínimos:
+
+- inicio/cierre de sesión relevante;
+- cambios de roles o memberships;
+- creación/edición/cierre de obligaciones y acciones;
+- carga/eliminación de evidencia;
+- cambios de configuración;
+- acceso de soporte TIBOX a un cliente;
+- conexión/desconexión de integraciones;
+- exportaciones sensibles.
+
+`audit_events` será append-only para usuarios de aplicación.
+
+## 11. Ambientes
 
 ```text
-Nombre visible -> InternalName
+local        → desarrollo
+preview      → Vercel Preview por PR
+production   → cumplimiento.tibox.cl
 ```
 
-Después resuelve cada dato usando un conjunto de aliases funcionales.
+Cada ambiente usa proyecto/configuración separada o secretos separados. Nunca se reutilizan claves productivas en previews no confiables.
 
-Ejemplo conceptual:
-
-```javascript
-status: ["Estado", "Status"]
-responsible: ["Responsable", "Responsible"]
-module: ["ModuloPortal", "Módulo", "Modulo"]
-```
-
-Esto hace la solución más tolerante a listas creadas manualmente.
-
-## 6. FieldValuesAsText
-
-Para mostrar datos se prioriza `FieldValuesAsText` de SharePoint REST.
-
-Esto ayuda especialmente con:
-
-- Persona o grupo;
-- Lookup;
-- Choice;
-- Fechas;
-- valores formateados.
-
-De esta forma, el frontend puede mostrar el texto que SharePoint ya preparó sin conocer todos los tipos de columna de antemano.
-
-## 7. Módulos funcionales
-
-El modelo base considera nueve módulos:
-
-1. Información y transparencia.
-2. Derechos de titulares.
-3. Seguridad y confidencialidad.
-4. Incidentes y vulneraciones.
-5. Privacidad desde el diseño.
-6. Terceros y encargados.
-7. Evaluaciones de impacto.
-8. Prevención y cumplimiento.
-9. Seguridad de infraestructura y aplicaciones.
-
-Si la lista `Módulos del Portal` está disponible, sus registros reemplazan/complementan el catálogo visual por defecto.
-
-## 8. Matriz de Cumplimiento
-
-La matriz es la fuente principal de obligaciones.
-
-El portal intenta resolver, entre otros:
-
-- obligación/título;
-- módulo;
-- descripción;
-- artículo o referencia legal;
-- estado;
-- responsable;
-- fecha;
-- observaciones;
-- adjuntos/evidencias.
-
-La primera versión es principalmente de lectura y deriva al formulario nativo de SharePoint para edición.
-
-## 9. Assessment de Seguridad
-
-La vista técnica usa la lista `Assessment de Seguridad` y puede mostrar:
-
-- Control de seguridad;
-- Categoría;
-- Descripción del control;
-- Nivel;
-- Estado;
-- Recomendación;
-- Responsable;
-- Fecha de revisión;
-- Observaciones;
-- Evidencias/adjuntos;
-- Módulo del portal.
-
-Los elementos se agrupan visualmente por categoría cuando hay información suficiente.
-
-## 10. Dashboard
-
-Si existe información utilizable en `Matriz de Cumplimiento`, el portal calcula indicadores básicos:
-
-- total de obligaciones;
-- cumplidas;
-- en proceso;
-- pendientes;
-- porcentaje de avance.
-
-La lista `Resumen Ejecutivo` queda disponible para una futura versión donde ciertos indicadores sean definidos explícitamente por negocio.
-
-## 11. Evidencias
-
-### MVP
-
-Los adjuntos existentes se consultan mediante SharePoint REST y se muestran en el portal. La edición y carga puede derivar inicialmente al formulario nativo de SharePoint.
-
-### Siguiente fase
-
-Agregar carga directa desde el frontend mediante:
+## 12. Límites de confianza
 
 ```text
-/_api/web/lists(...)/items(ID)/AttachmentFiles/add(...)
+[Browser]
+   │ datos no confiables
+   ▼
+[Next.js server]
+   │ identidad validada
+   ▼
+[Supabase + RLS]
+
+[Next.js server]
+   │ secreto / token externo
+   ▼
+[Microsoft Graph]
 ```
 
-La operación deberá utilizar el `RequestDigest` de SharePoint y validar permisos/errores.
+Todo dato proveniente del navegador se considera no confiable.
 
-Para grandes volúmenes o requisitos documentales avanzados se evaluará migrar evidencias desde adjuntos de lista hacia una **biblioteca de documentos** relacionada por ID de obligación.
+## 13. Prototipo SharePoint
 
-## 12. Seguridad
+El archivo `portal/portal.html` se conserva únicamente como prototipo histórico y referencia visual/funcional. No forma parte de la arquitectura de producción objetivo.
 
-Las peticiones se realizan con:
+## 14. Decisiones abiertas
 
-```javascript
-credentials: "same-origin"
-```
-
-No se incluye:
-
-- client secret;
-- access token persistido;
-- usuario/contraseña;
-- app registration dentro del HTML.
-
-El código corre con el contexto del usuario conectado. Por lo tanto, nunca debe considerarse una capa de autorización independiente: SharePoint continúa siendo la autoridad de permisos.
-
-## 13. Modo clásico vs. SPFx
-
-### MVP clásico
-
-Ventajas:
-
-- despliegue muy rápido;
-- un solo archivo;
-- fácil de probar y ajustar;
-- no requiere App Catalog ni toolchain Node.js.
-
-Desventajas:
-
-- depende de custom script;
-- solo puede insertarse directamente en páginas clásicas;
-- menor gobernanza que SPFx;
-- custom script se habilita temporalmente en SharePoint Online.
-
-### Evolución SPFx
-
-La versión SPFx debe reutilizar:
-
-- diseño visual;
-- normalización de datos;
-- aliases de listas/campos;
-- lógica de dashboard;
-- modelo de navegación.
-
-La capa REST podrá reemplazarse gradualmente por `SPHttpClient` sin cambiar el modelo funcional.
-
-## 14. Provisioning futuro
-
-El instalador deberá ser idempotente.
-
-Es decir, ejecutarlo dos veces no debería duplicar listas ni datos. Debe:
-
-1. detectar el sitio;
-2. validar si cada lista existe;
-3. crear solo recursos faltantes;
-4. validar columnas por `InternalName`/Title;
-5. crear o actualizar datos base;
-6. crear/actualizar la página;
-7. instalar el frontend;
-8. ejecutar pruebas básicas de REST;
-9. devolver un informe final.
-
-## 15. Estructura futura propuesta
-
-```text
-/
-├── README.md
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── INSTALLATION.md
-│   ├── DATA-MODEL.md
-│   └── CHANGELOG.md
-├── portal/
-│   └── portal.html
-├── provisioning/
-│   ├── Install-PortalCumplimiento.ps1
-│   ├── Update-PortalCumplimiento.ps1
-│   └── data/
-│       ├── modules.json
-│       └── security-controls.json
-└── spfx/                       # fase posterior
-```
+Las decisiones que afectan alcance, almacenamiento, autenticación, soporte y posicionamiento comercial están en [`DECISIONES-PAULA.md`](DECISIONES-PAULA.md). No deben cerrarse por implementación implícita.
