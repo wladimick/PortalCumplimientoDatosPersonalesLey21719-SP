@@ -38,6 +38,14 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handlePassword} className="login-form">
+      <button className="btn btn-secondary btn-block office365-button" type="button" disabled aria-disabled="true">
+        <span className="office365-mark" aria-hidden="true"><span /><span /><span /><span /></span>
+        <span>Iniciar sesión con Office 365</span>
+        <span className="office365-soon">(Próximamente)</span>
+      </button>
+
+      <div className="login-method-divider" aria-hidden="true"><span>O continúa con</span></div>
+
       <div className="field"><label htmlFor="email">Correo</label><input id="email" className="input" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@empresa.cl" required /></div>
       <div className="field"><label htmlFor="password">Contraseña</label><input id="password" className="input" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" /></div>
       <button className="btn btn-primary btn-block" type="submit" disabled={loading || !password}><LogIn size={18} />{loading ? "Ingresando…" : "Ingresar"}</button>

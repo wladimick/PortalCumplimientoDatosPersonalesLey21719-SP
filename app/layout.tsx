@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Titillium_Web } from "next/font/google";
 import "./globals.css";
 import "./webops-design-system.css";
+import "./hub-shell.css";
 
 const titillium = Titillium_Web({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-tibox", display: "swap" });
 
