@@ -15,8 +15,20 @@ import {
 } from "lucide-react";
 import { TiboxBrand } from "@/components/brand/tibox-brand";
 
-const baseItems = [
-  { key: "dashboard", label: "Inicio", icon: BarChart3 },
+type NavigationItem = {
+  key: string;
+  label: string;
+  icon: typeof BarChart3;
+};
+
+type NavigationGroup = {
+  label: string;
+  items: NavigationItem[];
+};
+
+const dashboardItem: NavigationItem = { key: "dashboard", label: "Dashboard", icon: BarChart3 };
+
+const managementItems: NavigationItem[] = [
   { key: "cumplimiento", label: "Cumplimiento", icon: ClipboardCheck },
   { key: "seguridad", label: "Seguridad", icon: LockKeyhole },
   { key: "acciones", label: "Acciones", icon: ListTodo },
@@ -26,29 +38,52 @@ const baseItems = [
 
 export function Sidebar({ orgSlug, orgName, internal, showAdministration }: { orgSlug: string; orgName: string; internal: boolean; showAdministration: boolean }) {
   const pathname = usePathname();
-  const items = [
-    ...baseItems,
-    ...(internal && showAdministration ? [{ key: "administracion", label: "Administración", icon: UsersRound }] : []),
-    ...(internal ? [{ key: "decisiones", label: "Decisiones Paula", icon: MessagesSquare }] : []),
+
+  const groups: NavigationGroup[] = [
+    { label: "Inicio", items: [dashboardItem] },
+    { label: "Gestión", items: managementItems },
+    ...(internal && showAdministration
+      ? [{ label: "Sistema", items: [{ key: "administracion", label: "Administración", icon: UsersRound }] }]
+      : []),
+    ...(internal
+      ? [{ label: "Interno", items: [{ key: "decisiones", label: "Decisiones Paula", icon: MessagesSquare }] }]
+      : []),
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand"><TiboxBrand light /></div>
-      <div className="sidebar-client">
-        <small>{internal ? "Espacio interno" : "Cliente"}</small>
+    <aside className="sidebar sidebar-hub">
+      <div className="sidebar-brand sidebar-hub-brand"><TiboxBrand light /></div>
+
+      <div className="sidebar-hub-context" title={orgName}>
+        <span>{internal ? "Espacio interno" : "Cliente"}</span>
         <strong>{orgName}</strong>
       </div>
-      <nav className="nav" aria-label="Navegación principal">
-        {items.map(({ key, label, icon: Icon }) => {
-          const href = `/app/${orgSlug}/${key}`;
-          const active = pathname === href || pathname.startsWith(`${href}/`);
-          return <Link key={key} className={`nav-link${active ? " active" : ""}`} href={href}><Icon size={18} /><span>{label}</span></Link>;
-        })}
+
+      <nav className="nav sidebar-hub-nav" aria-label="Navegación principal">
+        {groups.map((group) => (
+          <div className="sidebar-nav-group" key={group.label}>
+            <span className="sidebar-nav-label">{group.label}</span>
+            <div className="sidebar-nav-links">
+              {group.items.map(({ key, label, icon: Icon }) => {
+                const href = `/app/${orgSlug}/${key}`;
+                const active = pathname === href || pathname.startsWith(`${href}/`);
+                return (
+                  <Link key={key} className={`nav-link${active ? " active" : ""}`} href={href} aria-current={active ? "page" : undefined}>
+                    <Icon size={18} strokeWidth={1.9} />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
+
       <div className="nav-spacer" />
-      <Link className="nav-link" href="/app"><Settings size={18} /><span>Cambiar organización</span></Link>
-      <div className="sidebar-footer">TIBOX Compliance · MVP</div>
+      <div className="sidebar-hub-bottom">
+        <Link className="nav-link sidebar-switch-link" href="/app"><Settings size={18} strokeWidth={1.9} /><span>Cambiar organización</span></Link>
+        <div className="sidebar-footer">TIBOX Compliance</div>
+      </div>
     </aside>
   );
 }
